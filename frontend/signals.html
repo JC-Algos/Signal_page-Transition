@@ -350,12 +350,13 @@
 
                     <h5><i class="bi bi-clock-history"></i> 歷史數據</h5>
 
-                    <button class="btn btn-warning w-100 mb-2" id="historyBtn" onclick="fetchHistory()">
-                        <i class="bi bi-bar-chart"></i> 載入歷史記錄
-                    </button>
+                    <div class="mb-2">
+                        <label for="historyDays" class="form-label fw-semibold">歷史天數</label>
+                        <input type="number" class="form-control" id="historyDays" value="14" min="1" max="30">
+                    </div>
 
-                    <button class="btn btn-info w-100 text-white" id="buildBtn" onclick="buildHistory()">
-                        <i class="bi bi-hammer"></i> 建立歷史數據 (14天)
+                    <button class="btn btn-warning w-100 mb-2" id="historyBtn" onclick="fetchHistoryRealtime()">
+                        <i class="bi bi-bar-chart"></i> 載入歷史記錄
                     </button>
 
                     <div id="buildProgress" style="display: none;">
@@ -722,60 +723,75 @@
             }
         }
 
-        async function fetchHistory() {
+        async function fetchHistoryRealtime() {
             const exchange = document.getElementById('exchange').value;
+            const historyDays = parseInt(document.getElementById('historyDays').value) || 14;
             currentExchange = exchange;
 
-            showLoading(true, '正在載入歷史記錄...');
+            document.getElementById('historyBtn').disabled = true;
+            document.getElementById('buildProgress').style.display = 'block';
+            
+            const historyData = [];
+            let processedCount = 0;
 
             try {
-                const response = await fetch(`${API_BASE}/api/history/${exchange}`);
-                const data = await response.json();
+                // Fetch signals for each day individually
+                for (let i = 0; i < historyDays; i++) {
+                    const date = new Date();
+                    date.setDate(date.getDate() - i);
+                    const dateStr = date.toISOString().split('T')[0];
+                    
+                    updateProgress(Math.round((i / historyDays) * 100), `正在處理 ${dateStr}...`);
 
-                showLoading(false);
+                    try {
+                        const response = await fetch(`${API_BASE}/api/signals?exchange=${exchange}&from_date=${dateStr}&to_date=${dateStr}`);
+                        const data = await response.json();
 
-                if (data.success && data.history.length > 0) {
-                    currentHistory = data.history;
-                    showHistoryTable(data.history, exchange);
-                    showMessage(`載入了 ${data.total_records} 筆歷史記錄`, 'success');
+                        if (data.success && data.total_signals > 0) {
+                            const bullishPct = data.buy_signals > 0 
+                                ? Math.round((data.valid_buy_signals / data.buy_signals) * 100 * 10) / 10 
+                                : 0;
+                            const bearishPct = data.sell_signals > 0 
+                                ? Math.round((data.valid_sell_signals / data.sell_signals) * 100 * 10) / 10 
+                                : 0;
+
+                            historyData.push({
+                                date: dateStr,
+                                buy_signals: data.buy_signals,
+                                valid_buy_signals: data.valid_buy_signals,
+                                sell_signals: data.sell_signals,
+                                valid_sell_signals: data.valid_sell_signals,
+                                initial_momentum_ratio: `${data.buy_signals} 好 : ${data.sell_signals} 淡`,
+                                actual_momentum_ratio: `${data.valid_buy_signals} 好 : ${data.valid_sell_signals} 淡`,
+                                bullish_strength: `${data.buy_signals} 好 : ${data.valid_buy_signals} 有效好 (${bullishPct}%)`,
+                                bearish_strength: `${data.sell_signals} 淡 : ${data.valid_sell_signals} 有效淡 (${bearishPct}%)`
+                            });
+                            processedCount++;
+                        }
+                    } catch (dayError) {
+                        console.error(`Error fetching ${dateStr}:`, dayError);
+                    }
+
+                    // Small delay to avoid overwhelming the API
+                    await new Promise(resolve => setTimeout(resolve, 100));
+                }
+
+                updateProgress(100, '完成!');
+
+                if (historyData.length > 0) {
+                    // Sort by date (newest first)
+                    historyData.sort((a, b) => new Date(b.date) - new Date(a.date));
+                    currentHistory = historyData;
+                    showHistoryTable(historyData, exchange);
+                    showMessage(`載入了 ${processedCount} 天的歷史記錄 (即時計算)`, 'success');
                 } else {
-                    showMessage(`沒有找到 ${exchange} 的歷史數據。請先點擊「建立歷史數據」。`, 'info');
+                    showMessage(`沒有找到 ${exchange} 的歷史數據`, 'info');
                     hideHistoryTable();
                 }
             } catch (error) {
-                showLoading(false);
                 showMessage(`載入數據時出錯: ${error.message}`, 'error');
-            }
-        }
-
-        async function buildHistory() {
-            const exchange = document.getElementById('exchange').value;
-            currentExchange = exchange;
-
-            document.getElementById('buildBtn').disabled = true;
-            document.getElementById('buildProgress').style.display = 'block';
-            updateProgress(0, '開始建立歷史數據...');
-
-            try {
-                const response = await fetch(`${API_BASE}/api/build-history`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ exchange: exchange, days: 14 })
-                });
-
-                const data = await response.json();
-                updateProgress(100, '完成!');
-
-                if (data.success) {
-                    showMessage(`成功建立 ${data.dates_processed} 天的歷史數據`, 'success');
-                    setTimeout(() => fetchHistory(), 1000);
-                } else {
-                    showMessage('建立歷史數據時發生錯誤', 'error');
-                }
-            } catch (error) {
-                showMessage(`建立數據時出錯: ${error.message}`, 'error');
             } finally {
-                document.getElementById('buildBtn').disabled = false;
+                document.getElementById('historyBtn').disabled = false;
                 setTimeout(() => {
                     document.getElementById('buildProgress').style.display = 'none';
                 }, 2000);
