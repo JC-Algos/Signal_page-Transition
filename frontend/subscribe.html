@@ -1,0 +1,598 @@
+<!DOCTYPE html>
+<html lang="zh-HK">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>訂閱會員 - JC Algos</title>
+    
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://js.stripe.com/v3/"></script>
+    <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+    
+    <style>
+        :root {
+            --primary: #1a2332;
+            --secondary: #d4af37;
+            --accent: #6b8e5a;
+        }
+
+        body {
+            font-family: 'Microsoft JhengHei', 'PingFang TC', 'Helvetica Neue', Arial, sans-serif;
+            background: linear-gradient(135deg, #1a2332 0%, #2d3748 50%, #1a2332 100%);
+            min-height: 100vh;
+        }
+
+        .gradient-text {
+            background: linear-gradient(135deg, #d4af37 0%, #6b8e5a 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .glass-card {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            box-shadow: 0 25px 50px rgba(0, 0, 0, 0.25);
+        }
+
+        .pricing-card {
+            background: linear-gradient(145deg, #ffffff 0%, #f8f9fa 100%);
+            border: 3px solid #d4af37;
+            border-radius: 24px;
+            transition: all 0.4s ease;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .pricing-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 6px;
+            background: linear-gradient(90deg, #d4af37, #6b8e5a);
+        }
+
+        .pricing-card:hover {
+            transform: translateY(-10px);
+            box-shadow: 0 30px 60px rgba(212, 175, 55, 0.3);
+        }
+
+        .btn-subscribe {
+            background: linear-gradient(135deg, #d4af37 0%, #b8941f 100%);
+            color: white;
+            padding: 16px 48px;
+            border-radius: 12px;
+            font-size: 18px;
+            font-weight: 700;
+            border: none;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(212, 175, 55, 0.4);
+        }
+
+        .btn-subscribe:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(212, 175, 55, 0.5);
+        }
+
+        .btn-subscribe:disabled {
+            opacity: 0.7;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .feature-item {
+            display: flex;
+            align-items: center;
+            padding: 12px 0;
+            border-bottom: 1px solid #e5e7eb;
+        }
+
+        .feature-item:last-child {
+            border-bottom: none;
+        }
+
+        .check-icon {
+            width: 24px;
+            height: 24px;
+            background: linear-gradient(135deg, #10b981, #059669);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-right: 12px;
+            flex-shrink: 0;
+        }
+
+        .nav-blur {
+            backdrop-filter: blur(20px);
+            background: rgba(26, 35, 50, 0.9);
+        }
+
+        .loading-spinner {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid rgba(255,255,255,0.3);
+            border-top-color: white;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        .badge {
+            position: absolute;
+            top: -12px;
+            right: 20px;
+            background: linear-gradient(135deg, #ef4444, #dc2626);
+            color: white;
+            padding: 6px 16px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 700;
+        }
+
+        .savings-badge {
+            background: linear-gradient(135deg, #10b981, #059669);
+            color: white;
+            padding: 4px 12px;
+            border-radius: 12px;
+            font-size: 14px;
+            font-weight: 700;
+            display: inline-block;
+            margin-top: 8px;
+        }
+
+        /* Toggle Switch Styles */
+        .toggle-container {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 16px;
+            margin-bottom: 24px;
+        }
+
+        .toggle-label {
+            font-size: 16px;
+            font-weight: 600;
+            color: #6b7280;
+            transition: color 0.3s ease;
+        }
+
+        .toggle-label.active {
+            color: #1f2937;
+        }
+
+        .toggle-switch {
+            position: relative;
+            width: 64px;
+            height: 32px;
+            background: #e5e7eb;
+            border-radius: 16px;
+            cursor: pointer;
+            transition: background 0.3s ease;
+        }
+
+        .toggle-switch.annual {
+            background: linear-gradient(135deg, #10b981, #059669);
+        }
+
+        .toggle-switch::after {
+            content: '';
+            position: absolute;
+            top: 4px;
+            left: 4px;
+            width: 24px;
+            height: 24px;
+            background: white;
+            border-radius: 50%;
+            transition: transform 0.3s ease;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+        }
+
+        .toggle-switch.annual::after {
+            transform: translateX(32px);
+        }
+
+        .intro-banner {
+            background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
+            border: 2px solid #f59e0b;
+            border-radius: 12px;
+            padding: 16px;
+            margin-bottom: 24px;
+            text-align: center;
+        }
+
+        .intro-banner h4 {
+            color: #92400e;
+            font-weight: 700;
+            margin-bottom: 4px;
+        }
+
+        .intro-banner p {
+            color: #a16207;
+            font-size: 14px;
+        }
+
+        .price-comparison {
+            display: flex;
+            align-items: baseline;
+            justify-content: center;
+            gap: 8px;
+        }
+
+        .original-price {
+            text-decoration: line-through;
+            color: #9ca3af;
+            font-size: 18px;
+        }
+
+        .trial-badge {
+            background: linear-gradient(135deg, #8b5cf6, #7c3aed);
+            color: white;
+            padding: 4px 10px;
+            border-radius: 8px;
+            font-size: 12px;
+            font-weight: 600;
+            display: inline-block;
+            margin-bottom: 8px;
+        }
+    </style>
+</head>
+<body>
+    <!-- Navigation -->
+    <nav class="fixed top-0 left-0 right-0 z-50 nav-blur border-b border-white/10">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between items-center h-16">
+                <div class="flex items-center space-x-4">
+                    <a href="index.html" class="text-2xl font-bold gradient-text">JC Algos</a>
+                </div>
+                <div class="flex items-center space-x-4">
+                    <a href="index.html" class="text-white/80 hover:text-white transition">返回首頁</a>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <div class="pt-24 pb-16 px-4">
+        <div class="max-w-4xl mx-auto">
+            <!-- Header -->
+            <div class="text-center mb-12">
+                <h1 class="text-4xl md:text-5xl font-bold text-white mb-4">
+                    升級您的投資體驗
+                </h1>
+                <p class="text-xl text-white/70">
+                    解鎖所有專業投資分析工具，助您做出更明智的投資決策
+                </p>
+            </div>
+
+            <!-- Pricing Card -->
+            <div class="max-w-md mx-auto">
+                <div class="pricing-card p-8 relative">
+                    <span class="badge" id="plan-badge">推薦</span>
+                    
+                    <!-- Plan Toggle -->
+                    <div class="toggle-container">
+                        <span class="toggle-label" id="monthly-label">月費</span>
+                        <div class="toggle-switch" id="plan-toggle" onclick="togglePlan()"></div>
+                        <span class="toggle-label" id="annual-label">年費</span>
+                    </div>
+
+                    <!-- Plan Name -->
+                    <div class="text-center mb-4">
+                        <h2 class="text-2xl font-bold text-gray-800 mb-2" id="plan-name">基本會員</h2>
+                        <p class="text-gray-500" id="plan-subtitle">Basic Member - 月費計劃</p>
+                    </div>
+
+                    <!-- Intro Offer Banner (Monthly only) -->
+                    <div class="intro-banner" id="intro-banner">
+                        <span class="trial-badge">🎉 新用戶專享</span>
+                        <h4>7 天免費試用 + 首 3 個月優惠價</h4>
+                        <p>試用期後只需 HKD 199/月（原價 HKD 299）</p>
+                    </div>
+
+                    <!-- Price -->
+                    <div class="text-center mb-6">
+                        <!-- Monthly Price -->
+                        <div id="monthly-price">
+                            <div class="price-comparison">
+                                <span class="original-price">HKD 299</span>
+                                <span class="text-lg text-gray-500">HKD</span>
+                                <span class="text-6xl font-bold text-gray-800 mx-2">199</span>
+                                <span class="text-gray-500">/ 月</span>
+                            </div>
+                            <p class="text-sm text-green-600 font-semibold mt-2">首 3 個月優惠價，之後 HKD 299/月</p>
+                            <p class="text-xs text-gray-400 mt-1">每月自動續訂，可隨時取消</p>
+                        </div>
+
+                        <!-- Annual Price (hidden by default) -->
+                        <div id="annual-price" style="display: none;">
+                            <div class="flex items-baseline justify-center">
+                                <span class="text-lg text-gray-500">HKD</span>
+                                <span class="text-6xl font-bold text-gray-800 mx-2">2,388</span>
+                                <span class="text-gray-500">/ 年</span>
+                            </div>
+                            <div class="savings-badge">🔥 慳 HKD 1,200！</div>
+                            <p class="text-sm text-gray-500 mt-2">相當於每月只需 HKD 199</p>
+                            <p class="text-xs text-gray-400 mt-1">每年自動續訂，可隨時取消</p>
+                        </div>
+                    </div>
+
+                    <!-- Features -->
+                    <div class="mb-8">
+                        <div class="feature-item">
+                            <div class="check-icon">
+                                <svg class="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"></path>
+                                </svg>
+                            </div>
+                            <span class="text-gray-700">資產輪動分析</span>
+                        </div>
+                        <div class="feature-item">
+                            <div class="check-icon">
+                                <svg class="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"></path>
+                                </svg>
+                            </div>
+                            <span class="text-gray-700">投資組合追蹤器</span>
+                        </div>
+                        <div class="feature-item">
+                            <div class="check-icon">
+                                <svg class="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"></path>
+                                </svg>
+                            </div>
+                            <span class="text-gray-700">相對強弱分析 (RS Analysis)</span>
+                        </div>
+                        <div class="feature-item">
+                            <div class="check-icon">
+                                <svg class="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"></path>
+                                </svg>
+                            </div>
+                            <span class="text-gray-700">基本面數據分析</span>
+                        </div>
+                        <div class="feature-item">
+                            <div class="check-icon">
+                                <svg class="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"></path>
+                                </svg>
+                            </div>
+                            <span class="text-gray-700">Pin Bar 技術分析</span>
+                        </div>
+                        <div class="feature-item">
+                            <div class="check-icon">
+                                <svg class="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"></path>
+                                </svg>
+                            </div>
+                            <span class="text-gray-700">HSI vs SPX 比較分析</span>
+                        </div>
+                        <div class="feature-item">
+                            <div class="check-icon">
+                                <svg class="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"></path>
+                                </svg>
+                            </div>
+                            <span class="text-gray-700">優先客戶支援</span>
+                        </div>
+                    </div>
+
+                    <!-- Subscribe Button -->
+                    <div class="text-center">
+                        <button id="subscribe-btn" onclick="handleSubscribe()" class="btn-subscribe w-full">
+                            <span id="btn-text">開始 7 天免費試用</span>
+                            <span id="btn-loading" class="loading-spinner ml-2" style="display: none;"></span>
+                        </button>
+                        <p class="text-xs text-gray-400 mt-4">
+                            點擊訂閱即表示您同意我們的服務條款
+                        </p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Trust Badges -->
+            <div class="mt-12 text-center">
+                <div class="flex justify-center items-center space-x-8 text-white/50">
+                    <div class="flex items-center">
+                        <svg class="w-6 h-6 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"></path>
+                        </svg>
+                        <span>安全付款</span>
+                    </div>
+                    <div class="flex items-center">
+                        <svg class="w-6 h-6 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"></path>
+                        </svg>
+                        <span>Stripe 加密</span>
+                    </div>
+                    <div class="flex items-center">
+                        <svg class="w-6 h-6 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
+                        </svg>
+                        <span>隨時取消</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- FAQ Section -->
+            <div class="mt-16 glass-card p-8">
+                <h3 class="text-2xl font-bold text-gray-800 mb-6 text-center">常見問題</h3>
+                
+                <div class="space-y-4">
+                    <div class="border-b border-gray-200 pb-4">
+                        <h4 class="font-semibold text-gray-800 mb-2">7 天免費試用是怎樣運作的？</h4>
+                        <p class="text-gray-600">註冊後您可以即時使用所有功能。7 天內取消不會收取任何費用。試用期結束後，將自動以優惠價 HKD 199/月收費（首 3 個月）。</p>
+                    </div>
+                    <div class="border-b border-gray-200 pb-4">
+                        <h4 class="font-semibold text-gray-800 mb-2">如何取消訂閱？</h4>
+                        <p class="text-gray-600">您可以隨時在帳戶設定中取消訂閱，取消後您仍可使用服務至當前計費週期結束。</p>
+                    </div>
+                    <div class="border-b border-gray-200 pb-4">
+                        <h4 class="font-semibold text-gray-800 mb-2">年費計劃有什麼優惠？</h4>
+                        <p class="text-gray-600">年費計劃 HKD 2,388/年，相當於每月只需 HKD 199，全年可節省 HKD 1,200！</p>
+                    </div>
+                    <div class="pb-4">
+                        <h4 class="font-semibold text-gray-800 mb-2">支援哪些付款方式？</h4>
+                        <p class="text-gray-600">我們支援所有主要信用卡（Visa、Mastercard、American Express）以及 Apple Pay、Google Pay。</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Footer -->
+    <footer class="py-8 text-center text-white/50 text-sm">
+        <p>© 2026 JC Algos. 保留所有權利。</p>
+    </footer>
+
+    <script>
+        // ==========================================
+        // Configuration
+        // ==========================================
+        const STRIPE_PUBLIC_KEY = 'pk_live_51SkjJU1JIZhXOZpFiEgssBJoAAdZZUiaqzfrA7pZxzPLj6A4Z5DT73pLbhjTVSi7hq2Detl1BC3sGydpHlYByGZ5006nAJzg0G';
+        const API_BASE = 'https://api.jc-algos.com/api';
+        const SUPABASE_URL = 'https://nwhyoravkuyiuewlfgfw.supabase.co';
+        const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im53aHlvcmF2a3V5aXVld2xmZ2Z3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njc3MTU5NTgsImV4cCI6MjA4MzI5MTk1OH0.P7sflI0HFXjQOF-ON5x8b-7jujNbVtCCsq3KvNqKHog';
+        
+        const PRICE_IDS = {
+            monthly: 'price_1SnjiK1JIZhXOZpFl8dhRnTu',
+            annual: 'price_1Strgb1JIZhXOZpFoZZWjhrr'
+        };
+
+        const stripe = Stripe(STRIPE_PUBLIC_KEY);
+        const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+        // ==========================================
+        // State
+        // ==========================================
+        let isAnnual = false;
+
+        // ==========================================
+        // Toggle Plan
+        // ==========================================
+        function togglePlan() {
+            isAnnual = !isAnnual;
+            updateUI();
+        }
+
+        function updateUI() {
+            const toggle = document.getElementById('plan-toggle');
+            const monthlyLabel = document.getElementById('monthly-label');
+            const annualLabel = document.getElementById('annual-label');
+            const monthlyPrice = document.getElementById('monthly-price');
+            const annualPrice = document.getElementById('annual-price');
+            const introBanner = document.getElementById('intro-banner');
+            const planSubtitle = document.getElementById('plan-subtitle');
+            const planBadge = document.getElementById('plan-badge');
+            const btnText = document.getElementById('btn-text');
+
+            if (isAnnual) {
+                toggle.classList.add('annual');
+                monthlyLabel.classList.remove('active');
+                annualLabel.classList.add('active');
+                monthlyPrice.style.display = 'none';
+                annualPrice.style.display = 'block';
+                introBanner.style.display = 'none';
+                planSubtitle.textContent = 'Basic Member - 年費計劃';
+                planBadge.textContent = '慳 HKD 1,200!';
+                planBadge.style.background = 'linear-gradient(135deg, #10b981, #059669)';
+                btnText.textContent = '立即訂閱年費計劃';
+            } else {
+                toggle.classList.remove('annual');
+                monthlyLabel.classList.add('active');
+                annualLabel.classList.remove('active');
+                monthlyPrice.style.display = 'block';
+                annualPrice.style.display = 'none';
+                introBanner.style.display = 'block';
+                planSubtitle.textContent = 'Basic Member - 月費計劃';
+                planBadge.textContent = '推薦';
+                planBadge.style.background = 'linear-gradient(135deg, #ef4444, #dc2626)';
+                btnText.textContent = '開始 7 天免費試用';
+            }
+        }
+
+        // ==========================================
+        // Subscribe Handler
+        // ==========================================
+        async function handleSubscribe() {
+            const btn = document.getElementById('subscribe-btn');
+            const btnText = document.getElementById('btn-text');
+            const btnLoading = document.getElementById('btn-loading');
+
+            // Check if user is logged in
+            const { data: { user } } = await supabase.auth.getUser();
+            
+            if (!user) {
+                alert('請先登入您的帳戶才能訂閱。');
+                window.location.href = 'index.html';
+                return;
+            }
+
+            // Disable button and show loading
+            btn.disabled = true;
+            btnText.textContent = '處理中...';
+            btnLoading.style.display = 'inline-block';
+
+            try {
+                const priceId = isAnnual ? PRICE_IDS.annual : PRICE_IDS.monthly;
+
+                const response = await fetch(`${API_BASE}/stripe/create-checkout-session`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        price_id: priceId,
+                        email: user.email,
+                        user_id: user.id
+                    })
+                });
+
+                if (!response.ok) {
+                    const errorData = await response.json();
+                    throw new Error(errorData.error || '無法建立結帳會話');
+                }
+
+                const data = await response.json();
+
+                // Redirect to Stripe Checkout
+                if (data.url) {
+                    window.location.href = data.url;
+                } else {
+                    throw new Error('未收到結帳連結');
+                }
+
+            } catch (error) {
+                console.error('Subscription error:', error);
+                alert('訂閱過程發生錯誤，請稍後再試。\n\n' + error.message);
+                
+                // Reset button
+                btn.disabled = false;
+                updateUI();
+                btnLoading.style.display = 'none';
+            }
+        }
+
+        // ==========================================
+        // Initialize
+        // ==========================================
+        document.addEventListener('DOMContentLoaded', function() {
+            // Set default to monthly
+            updateUI();
+            
+            // Check URL params for cancelled state
+            const urlParams = new URLSearchParams(window.location.search);
+            if (urlParams.get('cancelled') === 'true') {
+                // Could show a message here
+            }
+        });
+    </script>
+</body>
+</html>
