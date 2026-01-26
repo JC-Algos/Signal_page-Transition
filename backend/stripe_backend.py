@@ -7,6 +7,18 @@ from flask import Flask, jsonify, request, redirect
 from flask_cors import CORS
 from supabase import create_client, Client
 
+# ==========================================
+# LOAD ENVIRONMENT VARIABLES FROM .env FILE
+# ==========================================
+from dotenv import load_dotenv
+
+# Load .env from same directory as this script
+env_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), '.env')
+load_dotenv(env_path)
+
+# Also try loading from current working directory
+load_dotenv()
+
 app = Flask(__name__)
 CORS(app)
 
@@ -238,5 +250,7 @@ if __name__ == '__main__':
         logger.warning("⚠️ STRIPE_WEBHOOK_SECRET not set!")
     if not supabase:
         logger.warning("⚠️ Supabase not configured!")
+    
+    logger.info(f"🔧 Config loaded - Stripe: {'✅' if stripe.api_key else '❌'}, Supabase: {'✅' if supabase else '❌'}")
     
     app.run(host='0.0.0.0', port=5007)
