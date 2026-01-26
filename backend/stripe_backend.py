@@ -237,6 +237,20 @@ def stripe_webhook():
                     'membership_status': 'premium'
                 }).eq('id', user_id).execute()
 
+    elif event_type == 'customer.subscription.created':
+        user_id = data.get('metadata', {}).get('user_id')
+        status = data.get('status')
+        
+        if user_id and supabase:
+            logger.info(f"🆕 New subscription created for user {user_id}, status: {status}")
+            
+            if status in ['active', 'trialing']:
+                supabase.table('user_profiles').update({
+                    'subscription_status': status,
+                    'membership_status': 'premium',
+                    'stripe_customer_id': data.get('customer')
+                }).eq('id', user_id).execute()
+
     return jsonify({'received': True})
 
 
