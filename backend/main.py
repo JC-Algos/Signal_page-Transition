@@ -732,10 +732,7 @@ async def get_exchanges():
     return {
         "exchanges": [
             {"code": "HKEX", "name": "Hong Kong"},
-            {"code": "BATS", "name": "US"},
-            {"code": "SSE_DLY", "name": "Shanghai"},
-            {"code": "ZSE_DLY", "name": "Shenzhen"},
-            {"code": "OANDA", "name": "Forex"}
+            {"code": "BATS", "name": "US"}
         ]
     }
 
