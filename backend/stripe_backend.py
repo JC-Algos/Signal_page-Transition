@@ -30,11 +30,11 @@ logger = logging.getLogger(__name__)
 # 1. CONFIGURATION (FROM ENVIRONMENT VARIABLES)
 # ==========================================
 
-# Stripe Keys (set these as environment variables on your server)
+# Stripe Keys
 stripe.api_key = os.environ.get('STRIPE_SECRET_KEY', '').strip()
 ENDPOINT_SECRET = os.environ.get('STRIPE_WEBHOOK_SECRET', '').strip()
 
-# Supabase Keys (set these as environment variables on your server)
+# Supabase Keys
 SUPABASE_URL = os.environ.get('SUPABASE_URL', '').strip()
 SUPABASE_KEY = os.environ.get('SUPABASE_SERVICE_KEY', '').strip()
 
@@ -50,10 +50,10 @@ PRICE_IDS = {
     'basic_annual': os.environ.get('STRIPE_PRICE_ANNUAL', 'price_1Strgb1JIZhXOZpFoZZWjhrr')
 }
 
-# Intro offer coupon (HKD 100 off for 3 months = HKD 199/mo instead of 299)
+# Intro offer coupon
 INTRO_COUPON_ID = os.environ.get('STRIPE_INTRO_COUPON', 'brc9vWay')
 
-# Free trial days for new users
+# Free trial days
 FREE_TRIAL_DAYS = int(os.environ.get('FREE_TRIAL_DAYS', '7'))
 
 
@@ -61,7 +61,7 @@ FREE_TRIAL_DAYS = int(os.environ.get('FREE_TRIAL_DAYS', '7'))
 def health_check():
     return jsonify({
         'status': 'healthy', 
-        'version': '4.0 (Intro Pricing + Annual)',
+        'version': '4.1 (Fixed promo/discount conflict)',
         'stripe_configured': bool(stripe.api_key),
         'supabase_configured': bool(supabase)
     })
@@ -88,7 +88,6 @@ def create_checkout_session():
         try:
             customers = stripe.Customer.list(email=user_email, limit=1)
             if customers.data:
-                # Check if they had a subscription before
                 subs = stripe.Subscription.list(customer=customers.data[0].id, limit=1)
                 if subs.data:
                     is_new_user = False
@@ -106,11 +105,9 @@ def create_checkout_session():
         is_monthly = price_id == PRICE_IDS['basic_monthly']
         
         if is_new_user and is_monthly:
-            # 7-day free trial for new users
             subscription_data['trial_period_days'] = FREE_TRIAL_DAYS
             logger.info(f"Applying {FREE_TRIAL_DAYS}-day trial for new user: {user_email}")
             
-            # HKD 199 for first 3 months (HKD 100 off coupon)
             if INTRO_COUPON_ID:
                 discounts = [{'coupon': INTRO_COUPON_ID}]
                 logger.info(f"Applying intro coupon {INTRO_COUPON_ID} for new user: {user_email}")
@@ -123,13 +120,16 @@ def create_checkout_session():
             'success_url': f'{WEBSITE_BASE_URL}/index.html?subscription=success',
             'cancel_url': f'{WEBSITE_BASE_URL}/subscribe.html?cancelled=true',
             'customer_email': user_email,
-            'subscription_data': subscription_data,
-            'allow_promotion_codes': True
+            'subscription_data': subscription_data
         }
 
-        # Add discounts if applicable
+        # FIX: Only add ONE of these - discounts OR allow_promotion_codes, not both
         if discounts:
             checkout_params['discounts'] = discounts
+            # Don't add allow_promotion_codes when auto-applying coupon
+        else:
+            # Only allow manual promo codes if no auto-discount
+            checkout_params['allow_promotion_codes'] = True
 
         checkout_session = stripe.checkout.Session.create(**checkout_params)
 
@@ -198,7 +198,6 @@ def stripe_webhook():
     if event_type == 'checkout.session.completed':
         user_id = data.get('metadata', {}).get('user_id')
         
-        # Fallback check
         subscription_id = data.get('subscription')
         if not user_id and subscription_id:
              try:
@@ -225,7 +224,6 @@ def stripe_webhook():
                 'membership_status': 'free'
             }).eq('id', user_id).execute()
 
-    # Handle trial/subscription status changes
     elif event_type == 'customer.subscription.updated':
         user_id = data.get('metadata', {}).get('user_id')
         status = data.get('status')
@@ -243,7 +241,6 @@ def stripe_webhook():
 
 
 if __name__ == '__main__':
-    # Verify configuration on startup
     if not stripe.api_key:
         logger.warning("⚠️ STRIPE_SECRET_KEY not set!")
     if not ENDPOINT_SECRET:
