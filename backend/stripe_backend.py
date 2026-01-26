@@ -61,7 +61,7 @@ FREE_TRIAL_DAYS = int(os.environ.get('FREE_TRIAL_DAYS', '7'))
 def health_check():
     return jsonify({
         'status': 'healthy', 
-        'version': '4.2 (Added subscription.created handler)',
+        'version': '4.1 (Fixed promo/discount conflict)',
         'stripe_configured': bool(stripe.api_key),
         'supabase_configured': bool(supabase)
     })
@@ -235,21 +235,6 @@ def stripe_webhook():
                 supabase.table('user_profiles').update({
                     'subscription_status': status,
                     'membership_status': 'premium'
-                }).eq('id', user_id).execute()
-
-    # Handle new subscription created (including trials)
-    elif event_type == 'customer.subscription.created':
-        user_id = data.get('metadata', {}).get('user_id')
-        status = data.get('status')
-        
-        if user_id and supabase:
-            logger.info(f"🆕 New subscription created for user {user_id}, status: {status}")
-            
-            if status in ['active', 'trialing']:
-                supabase.table('user_profiles').update({
-                    'subscription_status': status,
-                    'membership_status': 'premium',
-                    'stripe_customer_id': data.get('customer')
                 }).eq('id', user_id).execute()
 
     return jsonify({'received': True})
