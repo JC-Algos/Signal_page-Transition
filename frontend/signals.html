@@ -468,6 +468,33 @@
 
         // ==================== AUTH LOGIC ====================
 
+        // Check if user has premium membership
+        async function checkPremiumStatus(userId) {
+            try {
+                const { data: profile, error } = await supabaseClient
+                    .from('user_profiles')
+                    .select('*')
+                    .eq('id', userId)
+                    .single();
+
+                if (error) {
+                    console.error('Error fetching profile:', error);
+                    return false;
+                }
+
+                // Check premium or active status (same logic as index.html)
+                const dbStatus = (profile.membership_status || '').toLowerCase().trim();
+                const stripeActive = profile.subscription_status === 'active';
+                const isPremium = (dbStatus === 'premium') || (dbStatus === 'active') || stripeActive;
+
+                console.log("🔍 Premium Check:", "| DB狀態:", dbStatus, "| Stripe:", stripeActive, "| 結果:", isPremium);
+                return isPremium;
+            } catch (err) {
+                console.error('Premium check error:', err);
+                return false;
+            }
+        }
+
         document.addEventListener('DOMContentLoaded', async function() {
             // Set default dates
             const today = new Date().toISOString().split('T')[0];
@@ -486,15 +513,24 @@
             document.getElementById('dateMethod').addEventListener('change', toggleDateMethod);
             document.getElementById('sortPL').addEventListener('change', togglePLOrder);
 
-            // Check auth
+            // Check auth and premium status
             try {
                 if (!supabaseClient) {
                     showLogin();
                     return;
                 }
                 const { data: { user }, error } = await supabaseClient.auth.getUser();
+                
                 if (user) {
-                    showDashboard();
+                    // Check premium membership
+                    const isPremium = await checkPremiumStatus(user.id);
+                    
+                    if (isPremium) {
+                        showDashboard();
+                    } else {
+                        // Not premium - show upgrade message
+                        showPremiumRequired();
+                    }
                 } else {
                     showLogin();
                 }
@@ -527,7 +563,15 @@
                     });
                     
                     if (error) throw error;
-                    showDashboard();
+                    
+                    // Check premium status after login
+                    const isPremium = await checkPremiumStatus(data.user.id);
+                    
+                    if (isPremium) {
+                        showDashboard();
+                    } else {
+                        showPremiumRequired();
+                    }
                     
                 } catch (err) {
                     loginError.textContent = err.message || '登入失敗，請檢查帳號密碼';
@@ -552,11 +596,42 @@
         function showDashboard() {
             loginContainer.style.display = 'none';
             mainContainer.style.display = 'block';
+            document.getElementById('premiumRequired')?.remove();
         }
 
         function showLogin() {
             loginContainer.style.display = 'block';
             mainContainer.style.display = 'none';
+            document.getElementById('premiumRequired')?.remove();
+        }
+
+        function showPremiumRequired() {
+            loginContainer.style.display = 'none';
+            mainContainer.style.display = 'none';
+            
+            // Remove existing message if any
+            document.getElementById('premiumRequired')?.remove();
+            
+            // Create premium required message
+            const premiumDiv = document.createElement('div');
+            premiumDiv.id = 'premiumRequired';
+            premiumDiv.className = 'login-container';
+            premiumDiv.innerHTML = `
+                <div class="text-center">
+                    <h3 class="mb-4">🔒 僅限付費會員</h3>
+                    <p class="text-muted mb-4">此功能僅供付費會員使用。</p>
+                    <p class="mb-4">請訂閱會員以解鎖全部功能。</p>
+                    <div class="d-grid gap-2">
+                        <a href="index.html" class="btn btn-gold">
+                            <i class="bi bi-house-door me-2"></i>返回首頁訂閱
+                        </a>
+                        <button class="btn btn-outline-secondary" onclick="logout()">
+                            <i class="bi bi-box-arrow-right me-2"></i>登出
+                        </button>
+                    </div>
+                </div>
+            `;
+            document.body.appendChild(premiumDiv);
         }
 
         // ==================== UI HELPERS ====================

@@ -1,0 +1,12 @@
+Add this line to index.html in the tools dropdown menu (inside div id="tools-dropdown-menu"):
+
+Find this section:
+<div id="tools-dropdown-menu" class="absolute right-0 mt-2 w-64 bg-white rounded-lg shadow-xl hidden z-50">
+    <div class="py-2">
+        ...existing menu items...
+    </div>
+</div>
+
+Add this line at the end of the menu items (before the closing </div>):
+
+<a href="#" onclick="checkLoginAndRedirect(event, 'signals.html')" class="block px-4 py-2 text-gray-800 hover:bg-gray-100 transition-colors text-sm">JC Algos 信號</a>
