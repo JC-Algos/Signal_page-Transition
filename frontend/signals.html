@@ -56,11 +56,6 @@
             background-color: #e0e0e0;
         }
 
-        .header-btn.active {
-            background-color: #0066cc;
-            color: white;
-        }
-
         /* Layout */
         .page-container {
             display: flex;
@@ -149,6 +144,15 @@
             background-color: #5a6268;
         }
 
+        .btn.warning {
+            background-color: #ffc107;
+            color: #333;
+        }
+
+        .btn.warning:hover {
+            background-color: #e0a800;
+        }
+
         .btn:disabled {
             background-color: #ccc;
             cursor: not-allowed;
@@ -196,6 +200,7 @@
             padding: 20px;
             box-shadow: 0 2px 10px rgba(0,0,0,0.1);
             overflow-x: auto;
+            margin-bottom: 25px;
         }
 
         .table-container h3 {
@@ -304,6 +309,12 @@
             border: 1px solid #f5c6cb;
         }
 
+        .message.info {
+            background-color: #cce5ff;
+            color: #004085;
+            border: 1px solid #b8daff;
+        }
+
         /* Download Button */
         .download-btn {
             display: inline-block;
@@ -315,10 +326,37 @@
             cursor: pointer;
             text-decoration: none;
             margin-top: 15px;
+            margin-right: 10px;
         }
 
         .download-btn:hover {
             background-color: #218838;
+        }
+
+        /* Progress Bar */
+        .progress-container {
+            width: 100%;
+            background-color: #e0e0e0;
+            border-radius: 5px;
+            margin: 15px 0;
+            overflow: hidden;
+        }
+
+        .progress-bar {
+            height: 20px;
+            background-color: #0066cc;
+            text-align: center;
+            line-height: 20px;
+            color: white;
+            font-size: 0.8rem;
+            transition: width 0.3s;
+        }
+
+        /* History Section */
+        .history-section {
+            margin-top: 30px;
+            padding-top: 30px;
+            border-top: 2px solid #ddd;
         }
 
         /* Responsive */
@@ -362,8 +400,6 @@
         <h1 class="header-title">JC Algos 信號分析系統</h1>
         <nav class="header-nav">
             <a href="index.html" class="header-btn">🏠 回首頁</a>
-            <a href="signals.html" class="header-btn active">📊 信號分析</a>
-            <a href="history.html" class="header-btn">📈 歷史記錄</a>
         </nav>
     </header>
 
@@ -425,9 +461,28 @@
                 📡 獲取信號
             </button>
 
-            <button class="btn secondary" id="refreshBtn" onclick="fetchSignals()">
+            <button class="btn secondary" onclick="fetchSignals()">
                 🔄 重新整理
             </button>
+
+            <hr style="margin: 25px 0; border: none; border-top: 1px solid #ddd;">
+
+            <h3>歷史數據</h3>
+
+            <button class="btn warning" id="historyBtn" onclick="fetchHistory()">
+                📊 載入歷史記錄
+            </button>
+
+            <button class="btn" id="buildBtn" onclick="buildHistory()" style="background-color: #17a2b8;">
+                🔨 建立歷史數據 (14天)
+            </button>
+
+            <div id="buildProgress" style="display: none;">
+                <div class="progress-container">
+                    <div class="progress-bar" id="progressBar" style="width: 0%;">0%</div>
+                </div>
+                <p id="progressText" style="text-align: center; color: #666; font-size: 0.9rem;"></p>
+            </div>
         </aside>
 
         <!-- Main Content -->
@@ -436,7 +491,7 @@
 
             <div id="loadingArea" class="loading" style="display: none;">
                 <div class="spinner"></div>
-                <p>正在獲取信號數據...</p>
+                <p id="loadingText">正在獲取信號數據...</p>
             </div>
 
             <div id="statsArea" style="display: none;"></div>
@@ -464,7 +519,32 @@
                     <tbody id="signalsBody">
                     </tbody>
                 </table>
-                <button class="download-btn" onclick="downloadCSV()">📥 下載 CSV</button>
+                <button class="download-btn" onclick="downloadSignalsCSV()">📥 下載信號 CSV</button>
+            </div>
+
+            <!-- History Section -->
+            <div id="historyArea" class="history-section" style="display: none;">
+                <div class="table-container">
+                    <h3 id="historyTitle">信號歷史統計</h3>
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>日期</th>
+                                <th>買入信號數量</th>
+                                <th>有效買入信號</th>
+                                <th>賣出信號數量</th>
+                                <th>有效賣出信號</th>
+                                <th>初始動量比率</th>
+                                <th>實際動量比率</th>
+                                <th>看好動量強度</th>
+                                <th>看淡動量強度</th>
+                            </tr>
+                        </thead>
+                        <tbody id="historyBody">
+                        </tbody>
+                    </table>
+                    <button class="download-btn" onclick="downloadHistoryCSV()">📥 下載歷史 CSV</button>
+                </div>
             </div>
         </main>
     </div>
@@ -475,6 +555,7 @@
 
         // Global data storage
         let currentSignals = [];
+        let currentHistory = [];
         let currentExchange = 'HKEX';
 
         // Initialize page
@@ -535,7 +616,7 @@
             }
 
             // Show loading
-            showLoading(true);
+            showLoading(true, '正在獲取信號數據...');
             hideMessage();
 
             try {
@@ -547,23 +628,101 @@
                 if (data.success) {
                     currentSignals = data.signals;
                     showStats(data);
-                    showTable(data.signals);
+                    showSignalsTable(data.signals);
                     showMessage(`找到 ${data.total_signals} 個信號`, 'success');
                 } else {
                     showMessage(data.message || '未找到信號', 'warning');
                     hideStats();
-                    hideTable();
+                    hideSignalsTable();
                 }
             } catch (error) {
                 showLoading(false);
                 showMessage(`獲取數據時出錯: ${error.message}`, 'error');
                 hideStats();
-                hideTable();
+                hideSignalsTable();
             }
         }
 
-        function showLoading(show) {
+        async function fetchHistory() {
+            const exchange = document.getElementById('exchange').value;
+            currentExchange = exchange;
+
+            // Show loading
+            showLoading(true, '正在載入歷史記錄...');
+
+            try {
+                const response = await fetch(`${API_BASE}/api/history/${exchange}`);
+                const data = await response.json();
+
+                showLoading(false);
+
+                if (data.success && data.history.length > 0) {
+                    currentHistory = data.history;
+                    showHistoryTable(data.history, exchange);
+                    showMessage(`載入了 ${data.total_records} 筆歷史記錄`, 'success');
+                } else {
+                    showMessage(`沒有找到 ${exchange} 的歷史數據。請先點擊「建立歷史數據」。`, 'info');
+                    hideHistoryTable();
+                }
+            } catch (error) {
+                showLoading(false);
+                showMessage(`載入數據時出錯: ${error.message}`, 'error');
+            }
+        }
+
+        async function buildHistory() {
+            const exchange = document.getElementById('exchange').value;
+            currentExchange = exchange;
+
+            // Show progress
+            document.getElementById('buildBtn').disabled = true;
+            document.getElementById('buildProgress').style.display = 'block';
+            updateProgress(0, '開始建立歷史數據...');
+
+            try {
+                const response = await fetch(`${API_BASE}/api/build-history`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        exchange: exchange,
+                        days: 14
+                    })
+                });
+
+                const data = await response.json();
+
+                updateProgress(100, '完成!');
+
+                if (data.success) {
+                    showMessage(`成功建立 ${data.dates_processed} 天的歷史數據`, 'success');
+                    // Auto-load history
+                    setTimeout(() => {
+                        fetchHistory();
+                    }, 1000);
+                } else {
+                    showMessage('建立歷史數據時發生錯誤', 'error');
+                }
+            } catch (error) {
+                showMessage(`建立數據時出錯: ${error.message}`, 'error');
+            } finally {
+                document.getElementById('buildBtn').disabled = false;
+                setTimeout(() => {
+                    document.getElementById('buildProgress').style.display = 'none';
+                }, 2000);
+            }
+        }
+
+        function updateProgress(percent, text) {
+            document.getElementById('progressBar').style.width = percent + '%';
+            document.getElementById('progressBar').textContent = percent + '%';
+            document.getElementById('progressText').textContent = text;
+        }
+
+        function showLoading(show, text = '正在載入...') {
             document.getElementById('loadingArea').style.display = show ? 'block' : 'none';
+            document.getElementById('loadingText').textContent = text;
             document.getElementById('fetchBtn').disabled = show;
         }
 
@@ -615,7 +774,7 @@
             document.getElementById('statsArea').style.display = 'none';
         }
 
-        function showTable(signals) {
+        function showSignalsTable(signals) {
             const tbody = document.getElementById('signalsBody');
             tbody.innerHTML = '';
 
@@ -652,13 +811,44 @@
             document.getElementById('tableArea').style.display = 'block';
         }
 
-        function hideTable() {
+        function hideSignalsTable() {
             document.getElementById('tableArea').style.display = 'none';
         }
 
-        function downloadCSV() {
+        function showHistoryTable(history, exchange) {
+            document.getElementById('historyTitle').textContent = `${exchange} 信號歷史統計`;
+            
+            const tbody = document.getElementById('historyBody');
+            tbody.innerHTML = '';
+
+            history.forEach((record, index) => {
+                const row = document.createElement('tr');
+                row.style.backgroundColor = index % 2 === 0 ? '#f5f5f5' : 'white';
+                
+                row.innerHTML = `
+                    <td>${record.date}</td>
+                    <td>${record.buy_signals}</td>
+                    <td>${record.valid_buy_signals}</td>
+                    <td>${record.sell_signals}</td>
+                    <td>${record.valid_sell_signals}</td>
+                    <td>${record.initial_momentum_ratio}</td>
+                    <td>${record.actual_momentum_ratio}</td>
+                    <td>${record.bullish_strength}</td>
+                    <td>${record.bearish_strength}</td>
+                `;
+                tbody.appendChild(row);
+            });
+
+            document.getElementById('historyArea').style.display = 'block';
+        }
+
+        function hideHistoryTable() {
+            document.getElementById('historyArea').style.display = 'none';
+        }
+
+        function downloadSignalsCSV() {
             if (!currentSignals || currentSignals.length === 0) {
-                showMessage('沒有數據可下載', 'warning');
+                showMessage('沒有信號數據可下載', 'warning');
                 return;
             }
 
@@ -674,6 +864,29 @@
                 s.trigger_day_close, s.present_close, s.pl_percent, s.valid_signal
             ]);
 
+            downloadCSV(headers, rows, `${currentExchange}_signals_${new Date().toISOString().split('T')[0]}.csv`);
+        }
+
+        function downloadHistoryCSV() {
+            if (!currentHistory || currentHistory.length === 0) {
+                showMessage('沒有歷史數據可下載', 'warning');
+                return;
+            }
+
+            const headers = [
+                '日期', '買入信號數量', '有效買入信號', '賣出信號數量', '有效賣出信號',
+                '初始動量比率', '實際動量比率', '看好動量強度', '看淡動量強度'
+            ];
+
+            const rows = currentHistory.map(h => [
+                h.date, h.buy_signals, h.valid_buy_signals, h.sell_signals, h.valid_sell_signals,
+                h.initial_momentum_ratio, h.actual_momentum_ratio, h.bullish_strength, h.bearish_strength
+            ]);
+
+            downloadCSV(headers, rows, `${currentExchange}_history_${new Date().toISOString().split('T')[0]}.csv`);
+        }
+
+        function downloadCSV(headers, rows, filename) {
             let csv = '\uFEFF'; // BOM for UTF-8
             csv += headers.join(',') + '\n';
             rows.forEach(row => {
@@ -684,7 +897,7 @@
             const link = document.createElement('a');
             const url = URL.createObjectURL(blob);
             link.setAttribute('href', url);
-            link.setAttribute('download', `${currentExchange}_signals_${new Date().toISOString().split('T')[0]}.csv`);
+            link.setAttribute('download', filename);
             link.style.visibility = 'hidden';
             document.body.appendChild(link);
             link.click();
