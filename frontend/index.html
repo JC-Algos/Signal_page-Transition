@@ -248,12 +248,20 @@
                         </div>
                     </div>
 
-                    <a href="technical.html" class="bg-gradient-to-r from-cyan-500 to-blue-600 text-white px-4 py-2 rounded-lg hover:from-cyan-600 hover:to-blue-700 transition-all transform hover:scale-105 text-sm font-semibold">
-                        登記免費工具
-                    </a>
-                    <a href="index-retirement.html" class="bg-gradient-to-r from-emerald-500 to-teal-600 text-white px-4 py-2 rounded-lg hover:from-emerald-600 hover:to-teal-700 transition-all transform hover:scale-105 text-sm font-semibold">
-                        退休計算機
-                    </a>
+                    <div class="relative">
+                        <button id="free-tools-dropdown-btn" class="bg-gradient-to-r from-cyan-500 to-blue-600 text-white px-4 py-2 rounded-lg hover:from-cyan-600 hover:to-blue-700 transition-all transform hover:scale-105 text-sm font-semibold flex items-center gap-1">
+                            登記免費工具
+                            <svg class="w-4 h-4 transition-transform" id="free-dropdown-arrow" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+                            </svg>
+                        </button>
+                        <div id="free-tools-dropdown-menu" class="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-xl hidden z-50">
+                            <div class="py-2">
+                                <a href="technical.html" class="block px-4 py-2 text-gray-800 hover:bg-gray-100 transition-colors text-sm">技術分析</a>
+                                <a href="index-retirement.html" class="block px-4 py-2 text-gray-800 hover:bg-gray-100 transition-colors text-sm">退休計算機</a>
+                            </div>
+                        </div>
+                    </div>
                     <a href="index-us.html" class="bg-gradient-to-r from-red-500 to-red-600 text-white px-4 py-2 rounded-lg hover:from-red-600 hover:to-red-700 transition-all transform hover:scale-105 text-sm font-semibold">
                         US 美股
                     </a>
@@ -1149,6 +1157,26 @@
                     if (!dropdownBtn.contains(e.target) && !dropdownMenu.contains(e.target)) {
                         dropdownMenu.classList.add('hidden');
                         dropdownArrow.classList.remove('rotate-180');
+                    }
+                });
+            }
+
+            // Free tools dropdown menu functionality
+            const freeDropdownBtn = document.getElementById('free-tools-dropdown-btn');
+            const freeDropdownMenu = document.getElementById('free-tools-dropdown-menu');
+            const freeDropdownArrow = document.getElementById('free-dropdown-arrow');
+
+            if (freeDropdownBtn && freeDropdownMenu) {
+                freeDropdownBtn.addEventListener('click', function(e) {
+                    e.stopPropagation();
+                    freeDropdownMenu.classList.toggle('hidden');
+                    if (freeDropdownArrow) freeDropdownArrow.classList.toggle('rotate-180');
+                });
+
+                document.addEventListener('click', function(e) {
+                    if (!freeDropdownBtn.contains(e.target) && !freeDropdownMenu.contains(e.target)) {
+                        freeDropdownMenu.classList.add('hidden');
+                        if (freeDropdownArrow) freeDropdownArrow.classList.remove('rotate-180');
                     }
                 });
             }
