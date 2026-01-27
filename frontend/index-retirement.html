@@ -1,0 +1,822 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Retirement Vision - Financial Planner</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap');
+        
+        :root {
+            --primary: #6366f1;
+            --primary-dark: #4f46e5;
+            --emerald: #10b981;
+            --slate-bg: #f8fafc;
+        }
+
+        body {
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            background-color: var(--slate-bg);
+            color: #1e293b;
+            letter-spacing: -0.01em;
+        }
+
+        .glass-card {
+            background: rgba(255, 255, 255, 0.8);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(226, 232, 240, 0.8);
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03);
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .glass-card:hover {
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.08);
+            transform: translateY(-2px);
+        }
+
+        .styled-input {
+            width: 100%;
+            padding: 0.5rem 0.75rem;
+            border-radius: 0.75rem;
+            border: 1px solid #e2e8f0;
+            background-color: #ffffff;
+            font-size: 0.875rem;
+            font-weight: 500;
+            outline: none;
+            transition: all 0.2s;
+        }
+
+        .styled-input:focus {
+            border-color: var(--primary);
+            box-shadow: 0 0 0 4px rgba(99, 102, 241, 0.15);
+        }
+
+        .tab-btn {
+            padding: 1rem;
+            font-size: 0.8rem;
+            font-weight: 800;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            transition: all 0.3s;
+            border-bottom: 3px solid transparent;
+        }
+
+        .tab-btn.active-work { 
+            color: var(--primary); 
+            border-bottom-color: var(--primary); 
+            background: linear-gradient(to top, rgba(99, 102, 241, 0.05), transparent);
+        }
+
+        .tab-btn.active-retire { 
+            color: #f59e0b; 
+            border-bottom-color: #f59e0b; 
+            background: linear-gradient(to top, rgba(245, 158, 11, 0.05), transparent);
+        }
+
+        .regular-highlight {
+            border-left: 4px solid #10b981 !important;
+            background-color: rgba(16, 185, 129, 0.03);
+        }
+
+        .flow-highlight {
+            border-left: 4px solid #8b5cf6 !important;
+            background-color: rgba(139, 92, 246, 0.03);
+        }
+
+        .stat-icon-bg {
+            width: 40px;
+            height: 40px;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 0.75rem;
+        }
+
+        .val-cell {
+            font-variant-numeric: tabular-nums;
+            font-weight: 700;
+        }
+
+        #chartjs-tooltip {
+            background: rgba(15, 23, 42, 0.9);
+            border-radius: 8px;
+            color: white;
+            opacity: 1;
+            pointer-events: none;
+            position: absolute;
+            transition: all .1s ease;
+        }
+
+        /* Navigation Bar Styles */
+        .nav-bar {
+            background: linear-gradient(135deg, #1a2332 0%, #2d3748 100%);
+            backdrop-filter: blur(20px);
+        }
+
+        .gradient-text {
+            background: linear-gradient(135deg, #d4af37 0%, #6b8e5a 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        @media (max-width: 640px) {
+            .tab-btn { font-size: 0.7rem; padding: 0.75rem 0.5rem; }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Login Container -->
+    <div id="loginContainer" class="min-h-screen flex items-center justify-center bg-gradient-to-br from-indigo-900 to-slate-900">
+        <div class="bg-white/10 backdrop-blur-lg rounded-2xl p-8 w-full max-w-md border border-white/20">
+            <h2 class="text-2xl font-bold text-white text-center mb-2">JC Algos</h2>
+            <p class="text-white/60 text-center mb-6">退休計算機 - 請先登入</p>
+            <form id="loginForm" class="space-y-4">
+                <div>
+                    <label class="text-white/80 text-sm">電子郵件</label>
+                    <input type="email" id="email" required class="w-full mt-1 px-4 py-3 bg-white/10 border border-white/20 rounded-lg text-white placeholder-white/40 focus:outline-none focus:border-indigo-400">
+                </div>
+                <div>
+                    <label class="text-white/80 text-sm">密碼</label>
+                    <input type="password" id="password" required class="w-full mt-1 px-4 py-3 bg-white/10 border border-white/20 rounded-lg text-white placeholder-white/40 focus:outline-none focus:border-indigo-400">
+                </div>
+                <button type="submit" class="w-full py-3 bg-gradient-to-r from-indigo-500 to-purple-600 text-white font-semibold rounded-lg hover:from-indigo-600 hover:to-purple-700 transition-all">
+                    登入
+                </button>
+                <div id="loginError" class="text-red-400 text-sm text-center hidden"></div>
+            </form>
+            <p class="text-white/40 text-center mt-4 text-sm">還沒有帳戶？<a href="index.html" class="text-indigo-400 hover:underline">返回首頁註冊</a></p>
+        </div>
+    </div>
+
+    <!-- Main Content (hidden until auth) -->
+    <div id="mainContent" style="display: none;">
+
+    <!-- Navigation Bar -->
+    <nav class="nav-bar fixed top-0 left-0 right-0 z-50 border-b border-white/10">
+        <div class="max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between items-center h-16">
+                <div class="flex items-center space-x-4">
+                    <div class="text-2xl font-bold gradient-text" style="font-family: 'Playfair Display', serif;">JC Algos</div>
+                    <div class="hidden md:block text-sm text-white/80">退休計算機</div>
+                </div>
+                
+                <div class="flex items-center space-x-4">
+                    <a href="index.html" class="bg-gradient-to-r from-red-500 to-red-600 text-white px-4 py-2 rounded-lg hover:from-red-600 hover:to-red-700 transition-all transform hover:scale-105 text-sm font-semibold">
+                        HK 港股
+                    </a>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <div class="max-w-[1600px] mx-auto p-4 md:p-10 pt-24">
+        <header class="mb-10 flex flex-col md:flex-row md:items-end justify-between gap-6">
+            <div>
+                <span class="inline-block px-3 py-1 bg-indigo-100 text-indigo-700 text-[10px] font-extrabold rounded-full uppercase tracking-widest mb-3">Visionary Financial Modeling</span>
+                <h1 class="text-4xl font-black text-slate-900 tracking-tight leading-none">Your Future. <span class="text-indigo-600">Visualized.</span></h1>
+                <p class="text-slate-500 mt-2 font-medium">Verified PV Projection with inflation-discounted growth logic.</p>
+            </div>
+            <div id="statusIndicator" class="flex items-center gap-3"></div>
+        </header>
+
+        <!-- STATS SECTION -->
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+            <div class="glass-card rounded-3xl p-6">
+                <div class="stat-icon-bg bg-blue-100 text-blue-600">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"></path></svg>
+                </div>
+                <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Total PV @ Retire</p>
+                <div id="statAtRetirement" class="text-2xl font-black text-slate-800 mt-1">$0</div>
+                <p class="text-[10px] text-slate-400 mt-1">Today's Purchasing Power</p>
+            </div>
+            <div class="glass-card rounded-3xl p-6">
+                <div class="stat-icon-bg bg-emerald-100 text-emerald-600">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                </div>
+                <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Final Legacy (PV)</p>
+                <div id="statFinalBalance" class="text-2xl font-black text-slate-800 mt-1">$0</div>
+                <p class="text-[10px] text-slate-400 mt-1">End of simulation</p>
+            </div>
+            <div class="glass-card rounded-3xl p-6">
+                <div class="stat-icon-bg bg-purple-100 text-purple-600">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path></svg>
+                </div>
+                <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Portfolio Return (Pre)</p>
+                <div id="statPortfolioReturnPre" class="text-2xl font-black text-purple-700 mt-1">0%</div>
+                <p class="text-[10px] text-slate-400 mt-1">Weighted Nominal Average</p>
+            </div>
+            <div class="glass-card rounded-3xl p-6">
+                <div class="stat-icon-bg bg-amber-100 text-amber-600">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg>
+                </div>
+                <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Retire Yield %</p>
+                <div class="flex items-center gap-1 mt-1">
+                    <input type="number" id="returnPost" class="text-2xl font-black text-amber-700 bg-transparent border-none w-24 p-0 outline-none focus:ring-0" value="4.0" step="0.1">
+                    <span class="text-xl font-bold text-amber-700">%</span>
+                </div>
+                <p class="text-[10px] text-slate-400 mt-1">Post-Retirement Nominal Rate</p>
+            </div>
+        </div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-8">
+            
+            <!-- LEFT PANEL -->
+            <aside class="lg:col-span-5 space-y-8">
+                <!-- Parameters -->
+                <section class="glass-card rounded-3xl p-8">
+                    <h2 class="text-sm font-extrabold mb-6 uppercase text-slate-400 tracking-widest flex items-center gap-2">
+                        <span class="w-2 h-2 bg-indigo-500 rounded-full"></span> Timeframe & Market
+                    </h2>
+                    <div class="grid grid-cols-2 gap-6">
+                        <div class="input-group"><label>Current Age</label><input type="number" id="currentAge" class="styled-input" value="30"></div>
+                        <div class="input-group"><label>Retire Age</label><input type="number" id="retirementAge" class="styled-input" value="65"></div>
+                        <div class="input-group"><label>Life Expectancy</label><input type="number" id="lifeExpectancy" class="styled-input" value="90"></div>
+                        <div class="input-group"><label>Inflation (%)</label><input type="number" id="inflation" class="styled-input" value="2.5" step="0.1"></div>
+                    </div>
+                </section>
+
+                <!-- Assets Table (Wealth Engine) -->
+                <section class="glass-card rounded-3xl overflow-hidden">
+                    <div class="bg-slate-900/5 px-8 py-5 border-b border-slate-200">
+                        <h2 class="text-sm font-extrabold text-slate-600 uppercase tracking-widest">Wealth Engine</h2>
+                    </div>
+                    <div class="p-6">
+                        <div class="grid grid-cols-12 gap-2 mb-4 table-header text-[10px] font-bold text-slate-500 uppercase">
+                            <div class="col-span-5">Account Name</div>
+                            <div class="col-span-2 text-right">Balance / Monthly $</div>
+                            <div class="col-span-2 text-right">Yield %</div>
+                            <div class="col-span-3 text-right text-indigo-600">@ Retire</div>
+                        </div>
+                        <div id="portfolioList" class="space-y-1"></div>
+                        <div class="mt-4 pt-4 border-t border-slate-200">
+                            <p class="text-[9px] text-slate-400 flex items-center gap-2">
+                                <span class="inline-block w-3 h-3 bg-emerald-50 border border-emerald-200 rounded"></span>
+                                Green fields = Auto-calculated monthly contribution from surplus × split %
+                            </p>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Surplus Slider -->
+                <section class="glass-card rounded-3xl p-8 bg-gradient-to-br from-indigo-50/50 to-emerald-50/50">
+                    <div class="flex justify-between items-center mb-6">
+                        <h2 class="text-sm font-extrabold uppercase text-slate-500 tracking-widest">Surplus Destination</h2>
+                        <span id="splitValueDisplay" class="px-3 py-1 bg-indigo-600 text-white text-xs font-bold rounded-lg">50%</span>
+                    </div>
+                    <input type="range" id="savingsSplit" class="w-full h-2 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-indigo-600" min="0" max="100" value="50">
+                    <div class="flex justify-between mt-3 text-[10px] font-bold text-slate-400 uppercase tracking-wider">
+                        <span>To Regular Investment</span>
+                        <span>To Regular Cash</span>
+                    </div>
+                </section>
+            </aside>
+
+            <!-- RIGHT PANEL -->
+            <main class="lg:col-span-7 space-y-8">
+                <!-- Session Tabs -->
+                <div class="glass-card rounded-3xl overflow-hidden">
+                    <div class="flex border-b border-slate-200 bg-slate-50/50">
+                        <button onclick="switchSession('work')" id="tab-work" class="flex-1 tab-btn active-work">Active Phase (Pre-Retire)</button>
+                        <button onclick="switchSession('retire')" id="tab-retire" class="flex-1 tab-btn">Legacy Phase (Post-Retire)</button>
+                    </div>
+
+                    <!-- Work Phase -->
+                    <div id="session-work" class="p-8">
+                        <div class="mb-8 grid grid-cols-3 gap-6">
+                            <div class="summary-badge border-l-4 border-indigo-400 p-4">
+                                <p class="text-[9px] font-bold text-slate-400 uppercase">Monthly Income</p>
+                                <p id="workMonthlyInc" class="text-lg font-black text-indigo-600 mt-1">$0</p>
+                            </div>
+                            <div class="summary-badge border-l-4 border-rose-400 p-4">
+                                <p class="text-[9px] font-bold text-slate-400 uppercase">Monthly Expense</p>
+                                <p id="workMonthlyExp" class="text-lg font-black text-rose-600 mt-1">$0</p>
+                            </div>
+                            <div class="summary-badge border-l-4 border-emerald-400 p-4">
+                                <p class="text-[9px] font-bold text-slate-400 uppercase">Monthly Surplus</p>
+                                <p id="workMonthlySurplus" class="text-lg font-black text-emerald-600 mt-1">$0</p>
+                            </div>
+                        </div>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+                            <div><h3 class="text-[10px] font-black text-slate-400 uppercase mb-4 flex items-center gap-2"><span class="w-1.5 h-1.5 bg-indigo-500 rounded-full"></span> Income Streams</h3><div id="incomeListWork" class="space-y-1"></div></div>
+                            <div><h3 class="text-[10px] font-black text-slate-400 uppercase mb-4 flex items-center gap-2"><span class="w-1.5 h-1.5 bg-rose-500 rounded-full"></span> Living Costs</h3><div id="expenseListWork" class="space-y-1"></div></div>
+                        </div>
+                    </div>
+
+                    <!-- Retire Phase -->
+                    <div id="session-retire" class="p-8 hidden">
+                        <div class="mb-8 grid grid-cols-3 gap-6">
+                            <div class="summary-badge border-l-4 border-indigo-400 p-4">
+                                <p class="text-[9px] font-bold text-slate-400 uppercase">Monthly Income</p>
+                                <p id="retireMonthlyInc" class="text-lg font-black text-indigo-600 mt-1">$0</p>
+                            </div>
+                            <div class="summary-badge border-l-4 border-amber-400 p-4">
+                                <p class="text-[9px] font-bold text-slate-400 uppercase">Living Standard</p>
+                                <p id="retireMonthlyLS" class="text-lg font-black text-amber-600 mt-1">$0</p>
+                            </div>
+                            <div class="summary-badge border-l-4 border-emerald-400 p-4">
+                                <p class="text-[9px] font-bold text-slate-400 uppercase">Monthly Flow</p>
+                                <p id="retireMonthlySurplus" class="text-lg font-black text-emerald-600 mt-1">$0</p>
+                            </div>
+                        </div>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+                            <div><h3 class="text-[10px] font-black text-slate-400 uppercase mb-4 flex items-center gap-2"><span class="w-1.5 h-1.5 bg-indigo-500 rounded-full"></span> Passive Sources</h3><div id="incomeListRetire" class="space-y-1"></div></div>
+                            <div><h3 class="text-[10px] font-black text-slate-400 uppercase mb-4 flex items-center gap-2"><span class="w-1.5 h-1.5 bg-amber-500 rounded-full"></span> Desired Standard</h3><div id="expenseListRetire" class="space-y-1"></div></div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Main Chart -->
+                <div class="glass-card rounded-3xl p-8">
+                    <div class="flex justify-between items-start mb-10">
+                        <h2 class="text-sm font-extrabold uppercase text-slate-400 tracking-widest">Real Wealth Trajectory</h2>
+                        <div class="flex items-center gap-4 text-[10px] font-bold uppercase tracking-wider">
+                            <span class="flex items-center gap-1.5"><span class="w-2.5 h-2.5 bg-indigo-500 rounded-full"></span> Net Assets (PV)</span>
+                        </div>
+                    </div>
+                    <div class="h-[400px] w-full">
+                        <canvas id="projectionChart"></canvas>
+                    </div>
+                </div>
+            </main>
+        </div>
+    </div>
+
+    <!-- Templates -->
+    <template id="assetTemplate">
+        <div class="asset-row grid grid-cols-12 gap-2 items-center py-2 px-2 rounded-xl transition-all hover:bg-slate-50 border border-transparent hover:border-slate-100">
+            <div class="col-span-5 text-[10px] font-bold text-slate-600 asset-name uppercase tracking-tight">Asset</div>
+            <div class="col-span-2"><input type="number" class="styled-input text-right balance-val text-[11px]" value="0"></div>
+            <div class="col-span-2"><input type="number" class="styled-input text-right rate-val text-[11px]" step="0.1" value="0"></div>
+            <div class="col-span-3 text-right val-cell at-retire-val text-[11px] text-slate-900">$0</div>
+        </div>
+    </template>
+
+    <template id="ledgerTemplate">
+        <div class="ledger-row grid grid-cols-12 gap-3 items-center py-2 px-3 rounded-xl hover:bg-slate-50 transition-colors">
+            <div class="col-span-5 text-[10px] font-bold text-slate-600 cat-name leading-tight uppercase">Category</div>
+            <div class="col-span-3 text-right">
+                <input type="number" class="styled-input text-right monthly-val text-[10px] font-bold" value="0">
+                <span class="phase-total-tag mt-1 opacity-60">Month</span>
+            </div>
+            <div class="col-span-4 text-right">
+                <input type="number" class="styled-input text-right yearly-val text-[10px] font-bold" value="0">
+                <span class="phase-total-tag mt-1 text-[8px] opacity-60 font-black">Life Total</span>
+            </div>
+        </div>
+    </template>
+
+    <script>
+        let chartInstance = null;
+        let activeSession = 'work';
+
+        const config = {
+            assets: [
+                { name: 'Stock Account 1', balance: 1000000, rate: 11.0 },
+                { name: 'Stock Account 2', balance: 1000000, rate: 9.0 },
+                { name: 'Current MPF/ 401K', balance: 250000, rate: 7.0 },
+                { name: 'Annual extra MPF/ 401K', balance: 180000, rate: 0, isContribution: true },
+                { name: 'Bond Account', balance: 0, rate: 4.5 },
+                { name: 'Fund Account', balance: 0, rate: 7.0 },
+                { name: 'Crypto Account', balance: 0, rate: 15.0 },
+                { name: 'FX account', balance: 0, rate: 2.5 },
+                { name: 'Current Cash', balance: 1000000, rate: 3.0 },
+                { name: 'Other Assets', balance: 0, rate: 6.0 }, // ADDED UNDER CURRENT CASH
+                { name: 'Regular Cash Pre-retirement', balance: 0, rate: 3.0, isReg: true, isAutoCalc: true },
+                { name: 'Regular Cash Post-retirement', balance: 0, rate: 3.0, isRegPost: true },
+                { name: 'Regular Invesment Pre-retirement', balance: 0, rate: 8.0, isReg: true, isAutoCalc: true },
+                { name: 'Regular Invesment Post-retirement', balance: 0, rate: 5.0, isRegPost: true }
+            ],
+            incomeWork: [
+                { name: 'Salary', def: 100000 }, 
+                { name: 'Bonus', def: 20000 },
+                { name: 'Other Income', def: 0 }
+            ],
+            expenseWork: [
+                { name: 'Rent / Mortgage', def: 20000 }, { name: 'Management Fee / Rates', def: 1500 }, { name: 'Electricity / Water / Gas', def: 1500 },
+                { name: 'Phone / Internet / TV', def: 500 }, { name: 'Groceries / Household items', def: 600 }, { name: 'Dining Out / Coffee / Snacks', def: 5000 },
+                { name: 'Transport', def: 2000 }, { name: 'Insurance', def: 3000 }, { name: 'Medical', def: 500 },
+                { name: 'Leisure', def: 12000 }, { name: 'Travel', def: 8000 }, { name: 'Taxation', def: 20000 }, { name: 'Others', def: 200 }
+            ],
+            incomeRetire: [
+                { name: 'Pension Income', def: 0 }, 
+                { name: 'Social Security', def: 4000 },
+                { name: 'Dividend Income', def: 10000 }, 
+                { name: 'Rental Income', def: 0 }, 
+                { name: 'Other Passive Income', def: 5000 }
+            ],
+            expenseRetire: [
+                { name: 'Rent / Mortgage', def: 0 }, { name: 'Management Fee / Rates', def: 1500 }, { name: 'Utilities', def: 1500 },
+                { name: 'Phone / Internet / TV', def: 400 }, { name: 'Groceries', def: 800 }, { name: 'Dining Out', def: 5000 },
+                { name: 'Transport', def: 200 }, { name: 'Insurance', def: 3000 }, { name: 'Medical', def: 10000 },
+                { name: 'Leisure', def: 18000 }, { name: 'Travel', def: 12000 }, { name: 'Taxation', def: 0 }, { name: 'Others', def: 5000 }
+            ]
+        };
+
+        function switchSession(session) {
+            activeSession = session;
+            document.getElementById('session-work').classList.toggle('hidden', session !== 'work');
+            document.getElementById('session-retire').classList.toggle('hidden', session !== 'retire');
+            const bw = document.getElementById('tab-work'), br = document.getElementById('tab-retire');
+            if (session === 'work') { bw.classList.add('active-work'); br.classList.remove('active-retire'); }
+            else { bw.classList.remove('active-work'); br.classList.add('active-retire'); }
+            calculate();
+        }
+
+        function init() {
+            const pList = document.getElementById('portfolioList'), aTemp = document.getElementById('assetTemplate');
+            config.assets.forEach(a => {
+                const clone = aTemp.content.cloneNode(true);
+                const row = clone.querySelector('.asset-row');
+                clone.querySelector('.asset-name').textContent = a.name;
+                clone.querySelector('.balance-val').value = a.balance;
+                clone.querySelector('.rate-val').value = a.rate;
+                if (a.isReg || a.isRegPost) row.classList.add('regular-highlight');
+                if (a.isContribution) {
+                    row.classList.add('flow-highlight');
+                    row.querySelector('.rate-val').classList.add('invisible');
+                }
+                // Make auto-calculated fields read-only with distinct styling
+                if (a.isAutoCalc) {
+                    const balInput = clone.querySelector('.balance-val');
+                    balInput.readOnly = true;
+                    balInput.classList.add('bg-emerald-50', 'text-emerald-700', 'cursor-not-allowed');
+                    balInput.title = 'Auto-calculated from monthly surplus × split %';
+                }
+                pList.appendChild(clone);
+            });
+
+            const setupList = (id, items) => {
+                const container = document.getElementById(id);
+                const lTemp = document.getElementById('ledgerTemplate');
+                items.forEach(it => {
+                    const clone = lTemp.content.cloneNode(true);
+                    clone.querySelector('.cat-name').textContent = it.name;
+                    const m = clone.querySelector('.monthly-val'), y = clone.querySelector('.yearly-val');
+                    m.value = it.def; y.value = it.def * 12;
+                    m.oninput = () => { y.value = m.value * 12; calculate(); };
+                    y.oninput = () => { m.value = (y.value / 12).toFixed(0); calculate(); };
+                    container.appendChild(clone);
+                });
+            };
+
+            setupList('incomeListWork', config.incomeWork);
+            setupList('expenseListWork', config.expenseWork);
+            setupList('incomeListRetire', config.incomeRetire);
+            setupList('expenseListRetire', config.expenseRetire);
+            calculate();
+        }
+
+        function calculate() {
+            const currentAge = parseInt(document.getElementById('currentAge').value) || 30;
+            const retirementAge = parseInt(document.getElementById('retirementAge').value) || 65;
+            const lifeExpectancy = parseInt(document.getElementById('lifeExpectancy').value) || 90;
+            const inflation = (parseFloat(document.getElementById('inflation').value) || 0) / 100;
+            const returnPostNominal = (parseFloat(document.getElementById('returnPost').value) || 0) / 100;
+            const splitToCash = parseInt(document.getElementById('savingsSplit').value) / 100;
+
+            const yearsToRetire = Math.max(0, retirementAge - currentAge);
+            document.getElementById('splitValueDisplay').innerText = (splitToCash * 100) + '%';
+
+            const getTotals = (id) => {
+                let sum = 0;
+                document.querySelectorAll(`#${id} .yearly-val`).forEach(el => sum += parseFloat(el.value) || 0);
+                return sum;
+            };
+
+            const workIncAnnualLiquid = getTotals('incomeListWork');
+            const workExpAnnual = getTotals('expenseListWork');
+            const workSurplusLiquidAnnual = workIncAnnualLiquid - workExpAnnual;
+            
+            // Calculate monthly contributions for Regular Pre-retirement accounts
+            const monthlySurplus = workSurplusLiquidAnnual / 12;
+            const monthlyToCash = Math.max(0, monthlySurplus * splitToCash);
+            const monthlyToInvest = Math.max(0, monthlySurplus * (1 - splitToCash));
+            
+            // Update the auto-calculated balance fields in the UI
+            document.querySelectorAll('#portfolioList .asset-row').forEach(row => {
+                const name = row.querySelector('.asset-name').textContent;
+                const balInput = row.querySelector('.balance-val');
+                if (name === 'Regular Cash Pre-retirement') {
+                    balInput.value = Math.round(monthlyToCash);
+                }
+                if (name === 'Regular Invesment Pre-retirement') {
+                    balInput.value = Math.round(monthlyToInvest);
+                }
+            });
+
+            const retireIncAnnual = getTotals('incomeListRetire');
+            const retireExpAnnual = getTotals('expenseListRetire');
+            const retireSurplusAnnual = retireIncAnnual - retireExpAnnual;
+
+            let simulationAssets = [];
+            let totalStartBalance = 0;
+            let totalStartYieldValue = 0;
+            let extraMPFAnnual = 0;
+
+            document.querySelectorAll('#portfolioList .asset-row').forEach(row => {
+                const name = row.querySelector('.asset-name').textContent;
+                const inputVal = parseFloat(row.querySelector('.balance-val').value) || 0;
+                const rateNom = (parseFloat(row.querySelector('.rate-val').value) || 0) / 100;
+                const realRate = ((1 + rateNom) / (1 + inflation)) - 1;
+
+                if (name === 'Annual extra MPF/ 401K') {
+                    extraMPFAnnual = inputVal;
+                    return;
+                }
+
+                // For auto-calculated Regular Pre-retirement accounts, balance field shows monthly contribution
+                // So initial balance should be 0, and we use the monthly value × 12 as annual contribution
+                const isAutoCalcAccount = (name === 'Regular Cash Pre-retirement' || name === 'Regular Invesment Pre-retirement');
+                const initialBal = isAutoCalcAccount ? 0 : inputVal;
+
+                simulationAssets.push({ 
+                    name, bal: initialBal, rateNom, realRate,
+                    isPostBucket: name.includes('Post-retirement'),
+                    isAutoCalc: isAutoCalcAccount,
+                    balAtRetire: 0
+                });
+
+                if (initialBal > 0) {
+                    totalStartBalance += initialBal;
+                    totalStartYieldValue += (initialBal * rateNom);
+                }
+            });
+
+            document.getElementById('workMonthlyInc').innerText = '$' + Math.round(workIncAnnualLiquid/12).toLocaleString();
+            document.getElementById('workMonthlyExp').innerText = '$' + Math.round(workExpAnnual/12).toLocaleString();
+            document.getElementById('workMonthlySurplus').innerText = '$' + Math.round((workSurplusLiquidAnnual + extraMPFAnnual)/12).toLocaleString();
+            document.getElementById('retireMonthlyInc').innerText = '$' + Math.round(retireIncAnnual/12).toLocaleString();
+            document.getElementById('retireMonthlyLS').innerText = '$' + Math.round(retireExpAnnual/12).toLocaleString();
+            document.getElementById('retireMonthlySurplus').innerText = '$' + Math.round(Math.max(0, retireSurplusAnnual/12)).toLocaleString();
+            document.getElementById('statPortfolioReturnPre').innerText = totalStartBalance > 0 ? ((totalStartYieldValue / totalStartBalance) * 100).toFixed(2) + '%' : '0%';
+
+            const realRatePostRetire = ((1 + returnPostNominal) / (1 + inflation)) - 1;
+            let labels = [], chartData = [];
+
+            for (let age = currentAge; age <= lifeExpectancy; age++) {
+                labels.push(`${age}`);
+                if (age === retirementAge) simulationAssets.forEach(a => a.balAtRetire = a.bal);
+
+                const isWorking = age < retirementAge;
+
+                if (isWorking) {
+                    const cashShare = workSurplusLiquidAnnual * splitToCash;
+                    const investShare = workSurplusLiquidAnnual * (1 - splitToCash);
+
+                    simulationAssets.forEach(a => {
+                        if (a.isPostBucket) return; 
+                        a.bal *= (1 + a.realRate);
+                        if (a.name === 'Regular Cash Pre-retirement') a.bal += cashShare;
+                        if (a.name === 'Regular Invesment Pre-retirement') a.bal += investShare;
+                        if (a.name === 'Current MPF/ 401K') a.bal += extraMPFAnnual;
+                        if (workSurplusLiquidAnnual < 0 && a.name === 'Current Cash') a.bal += workSurplusLiquidAnnual;
+                    });
+                } else {
+                    simulationAssets.forEach(a => a.bal *= (1 + realRatePostRetire));
+                    const incCashShare = retireIncAnnual * splitToCash;
+                    const incInvestShare = retireIncAnnual * (1 - splitToCash);
+                    simulationAssets.forEach(a => {
+                        if (a.name === 'Regular Cash Post-retirement') a.bal += incCashShare;
+                        if (a.name === 'Regular Invesment Post-retirement') a.bal += incInvestShare;
+                    });
+
+                    let amountToWithdraw = retireExpAnnual;
+                    const priorityOrder = [
+                        'Regular Cash Post-retirement', 'Regular Cash Pre-retirement', 'Current Cash',
+                        'Regular Invesment Post-retirement', 'Regular Invesment Pre-retirement',
+                        'Stock Account 1', 'Stock Account 2', 'Bond Account', 'Fund Account', 'Crypto Account', 'FX account', 'Other Assets', 'Current MPF/ 401K'
+                    ];
+
+                    for (const targetName of priorityOrder) {
+                        const asset = simulationAssets.find(a => a.name === targetName);
+                        if (asset && asset.bal > 0) {
+                            const taken = Math.min(asset.bal, amountToWithdraw);
+                            asset.bal -= taken;
+                            amountToWithdraw -= taken;
+                        }
+                        if (amountToWithdraw <= 0) break;
+                    }
+                    if (amountToWithdraw > 0) simulationAssets.forEach(a => {
+                        const taken = Math.min(a.bal, amountToWithdraw);
+                        a.bal -= taken;
+                        amountToWithdraw -= taken;
+                    });
+                }
+                chartData.push(Math.max(0, simulationAssets.reduce((s, a) => s + a.bal, 0)));
+            }
+
+            document.querySelectorAll('#portfolioList .asset-row').forEach((row) => {
+                const name = row.querySelector('.asset-name').textContent;
+                const assetData = simulationAssets.find(s => s.name === name);
+                if (assetData) row.querySelector('.at-retire-val').innerText = '$' + Math.round(assetData.balAtRetire).toLocaleString();
+                else if (name === 'Annual extra MPF/ 401K') row.querySelector('.at-retire-val').innerText = 'Annual Contribution';
+            });
+
+            const totalRetirePV = simulationAssets.reduce((s,a) => s + a.balAtRetire, 0);
+            const finalLegacyPV = chartData[chartData.length - 1];
+            document.getElementById('statAtRetirement').innerText = '$' + Math.round(totalRetirePV).toLocaleString();
+            document.getElementById('statFinalBalance').innerText = '$' + Math.round(finalLegacyPV).toLocaleString();
+
+            updateChart(labels, chartData, yearsToRetire);
+        }
+
+        function updateChart(labels, data, retIdx) {
+            const ctx = document.getElementById('projectionChart').getContext('2d');
+            if (chartInstance) chartInstance.destroy();
+            
+            const gradient = ctx.createLinearGradient(0, 0, 0, 400);
+            gradient.addColorStop(0, 'rgba(99, 102, 241, 0.4)');
+            gradient.addColorStop(0.5, 'rgba(99, 102, 241, 0.1)');
+            gradient.addColorStop(1, 'rgba(99, 102, 241, 0)');
+
+            chartInstance = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels,
+                    datasets: [{
+                        label: 'Net Wealth (PV)',
+                        data,
+                        borderColor: '#6366f1',
+                        borderWidth: 4,
+                        pointBackgroundColor: '#ffffff',
+                        pointBorderColor: '#6366f1',
+                        pointBorderWidth: 2,
+                        pointRadius: 0,
+                        pointHoverRadius: 6,
+                        pointHoverBorderWidth: 3,
+                        fill: true,
+                        backgroundColor: gradient,
+                        tension: 0.4,
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    interaction: { mode: 'index', intersect: false },
+                    plugins: {
+                        legend: { display: false },
+                        tooltip: {
+                            enabled: true,
+                            backgroundColor: '#0f172a',
+                            padding: 12,
+                            titleFont: { size: 14, weight: '800' },
+                            bodyFont: { size: 13, weight: '600' },
+                            callbacks: {
+                                label: (context) => `PV Wealth: $${Math.round(context.parsed.y).toLocaleString()}`,
+                                title: (items) => `Age ${items[0].label}`
+                            }
+                        }
+                    },
+                    scales: {
+                        y: { 
+                            beginAtZero: true, 
+                            grid: { color: 'rgba(0,0,0,0.04)' },
+                            ticks: { 
+                                font: { size: 10, weight: 'bold' },
+                                callback: (v) => '$' + (v >= 1000000 ? (v/1000000).toFixed(1) + 'M' : (v/1000).toFixed(0) + 'k')
+                            } 
+                        },
+                        x: { 
+                            grid: { display: false },
+                            ticks: { font: { size: 10, weight: 'bold' } }
+                        }
+                    }
+                },
+                plugins: [{
+                    id: 'verticalLine',
+                    afterDraw: chart => {
+                        if (chart.tooltip?._active?.length) {
+                            const x = chart.tooltip._active[0].element.x;
+                            const yAxis = chart.scales.y;
+                            const ctx = chart.ctx;
+                            ctx.save();
+                            ctx.beginPath();
+                            ctx.moveTo(x, yAxis.top);
+                            ctx.lineTo(x, yAxis.bottom);
+                            ctx.lineWidth = 1;
+                            ctx.strokeStyle = 'rgba(99, 102, 241, 0.2)';
+                            ctx.stroke();
+                            ctx.restore();
+                        }
+                        const {ctx, chartArea: {top, bottom}, scales: {x}} = chart;
+                        const xPos = x.getPixelForValue(labels[retIdx]);
+                        ctx.save();
+                        ctx.setLineDash([8, 6]);
+                        ctx.beginPath();
+                        ctx.moveTo(xPos, top);
+                        ctx.lineTo(xPos, bottom);
+                        ctx.lineWidth = 2;
+                        ctx.strokeStyle = '#f59e0b';
+                        ctx.stroke();
+                        ctx.fillStyle = '#f59e0b';
+                        ctx.font = 'bold 10px Jakarta Sans';
+                        ctx.textAlign = 'center';
+                        ctx.fillText('RETIREMENT', xPos, top - 10);
+                        ctx.restore();
+                    }
+                }]
+            });
+        }
+
+        document.body.addEventListener('input', (e) => { if(e.target.tagName === 'INPUT' || e.target.type === 'range') calculate(); });
+    </script>
+
+    </div><!-- End mainContent -->
+
+    <script>
+        // ==================== AUTH CONFIG ====================
+        const SUPABASE_URL = 'https://nwhyoravkuyiuewlfgfw.supabase.co';
+        const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im53aHlvcmF2a3V5aXVld2xmZ2Z3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njc3MTU5NTgsImV4cCI6MjA4MzI5MTk1OH0.kNjZpRwdYDLHNCjscq6suOGz2PNst8FNAVm5FsS87VI';
+
+        let supabaseClient = null;
+        if (typeof window.supabase !== 'undefined' && window.supabase.createClient) {
+            supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+        }
+
+        // Check if user is logged in (any registered user can access free tools)
+        async function checkUserAccess(userId) {
+            try {
+                const { data: profile, error } = await supabaseClient
+                    .from('user_profiles')
+                    .select('*')
+                    .eq('id', userId)
+                    .single();
+
+                if (error) {
+                    if (error.code === 'PGRST116') {
+                        return { hasAccess: true, tier: 'free' };
+                    }
+                    return { hasAccess: false, tier: null };
+                }
+                return { hasAccess: true, tier: (profile.membership_status || 'free').toLowerCase().trim() };
+            } catch (err) {
+                return { hasAccess: false, tier: null };
+            }
+        }
+
+        function showLogin() {
+            document.getElementById('loginContainer').style.display = 'flex';
+            document.getElementById('mainContent').style.display = 'none';
+        }
+
+        function showMain() {
+            document.getElementById('loginContainer').style.display = 'none';
+            document.getElementById('mainContent').style.display = 'block';
+            init(); // Initialize the calculator
+        }
+
+        // Auth check on page load
+        document.addEventListener('DOMContentLoaded', async () => {
+            if (!supabaseClient) {
+                showLogin();
+                return;
+            }
+            try {
+                const { data: { user } } = await supabaseClient.auth.getUser();
+                if (user) {
+                    const access = await checkUserAccess(user.id);
+                    if (access.hasAccess) {
+                        showMain();
+                    } else {
+                        showLogin();
+                    }
+                } else {
+                    showLogin();
+                }
+            } catch (error) {
+                showLogin();
+            }
+        });
+
+        // Login form handler
+        document.getElementById('loginForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const email = document.getElementById('email').value.trim();
+            const password = document.getElementById('password').value;
+            const errorDiv = document.getElementById('loginError');
+            
+            try {
+                const { data, error } = await supabaseClient.auth.signInWithPassword({ email, password });
+                if (error) throw error;
+                
+                const access = await checkUserAccess(data.user.id);
+                if (access.hasAccess) {
+                    showMain();
+                } else {
+                    errorDiv.textContent = '無法存取';
+                    errorDiv.classList.remove('hidden');
+                }
+            } catch (err) {
+                errorDiv.textContent = err.message || '登入失敗';
+                errorDiv.classList.remove('hidden');
+            }
+        });
+    </script>
+</body>
+</html>
