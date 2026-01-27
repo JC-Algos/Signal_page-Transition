@@ -739,6 +739,11 @@
             supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
         }
 
+        const loginContainer = document.getElementById('loginContainer');
+        const mainContent = document.getElementById('mainContent');
+        const loginForm = document.getElementById('loginForm');
+        const loginError = document.getElementById('loginError');
+
         // Check if user is logged in (any registered user can access free tools)
         async function checkUserAccess(userId) {
             try {
@@ -749,11 +754,15 @@
                     .single();
 
                 if (error) {
+                    // If no profile exists, user is registered but no profile yet
+                    // They should still have access to free tools
                     if (error.code === 'PGRST116') {
                         return { hasAccess: true, tier: 'free' };
                     }
                     return { hasAccess: false, tier: null };
                 }
+
+                // Any registered user has access to free tools
                 return { hasAccess: true, tier: (profile.membership_status || 'free').toLowerCase().trim() };
             } catch (err) {
                 return { hasAccess: false, tier: null };
@@ -761,25 +770,28 @@
         }
 
         function showLogin() {
-            document.getElementById('loginContainer').style.display = 'flex';
-            document.getElementById('mainContent').style.display = 'none';
+            loginContainer.style.display = 'flex';
+            mainContent.style.display = 'none';
         }
 
         function showMain() {
-            document.getElementById('loginContainer').style.display = 'none';
-            document.getElementById('mainContent').style.display = 'block';
+            loginContainer.style.display = 'none';
+            mainContent.style.display = 'block';
             init(); // Initialize the calculator
         }
 
         // Auth check on page load
         document.addEventListener('DOMContentLoaded', async () => {
-            if (!supabaseClient) {
-                showLogin();
-                return;
-            }
+            // Check auth - any logged in user can access free tools
             try {
+                if (!supabaseClient) {
+                    showLogin();
+                    return;
+                }
                 const { data: { user } } = await supabaseClient.auth.getUser();
+                
                 if (user) {
+                    // Any registered user can access free tools
                     const access = await checkUserAccess(user.id);
                     if (access.hasAccess) {
                         showMain();
@@ -795,28 +807,43 @@
         });
 
         // Login form handler
-        document.getElementById('loginForm').addEventListener('submit', async (e) => {
-            e.preventDefault();
-            const email = document.getElementById('email').value.trim();
-            const password = document.getElementById('password').value;
-            const errorDiv = document.getElementById('loginError');
-            
-            try {
-                const { data, error } = await supabaseClient.auth.signInWithPassword({ email, password });
-                if (error) throw error;
+        if (loginForm) {
+            loginForm.addEventListener('submit', async function(e) {
+                e.preventDefault();
                 
-                const access = await checkUserAccess(data.user.id);
-                if (access.hasAccess) {
-                    showMain();
-                } else {
-                    errorDiv.textContent = '無法存取';
-                    errorDiv.classList.remove('hidden');
+                const email = document.getElementById('email').value.trim();
+                const password = document.getElementById('password').value;
+                
+                const btn = loginForm.querySelector('button');
+                const originalText = btn.innerHTML;
+                btn.disabled = true;
+                btn.innerHTML = '<span class="animate-spin inline-block w-4 h-4 border-2 border-white border-t-transparent rounded-full mr-2"></span>登入中...';
+                loginError.classList.add('hidden');
+
+                try {
+                    if (!supabaseClient) throw new Error('系統未就緒');
+
+                    const { data, error } = await supabaseClient.auth.signInWithPassword({
+                        email, password
+                    });
+                    
+                    if (error) throw error;
+                    
+                    // Any registered user can access free tools
+                    const access = await checkUserAccess(data.user.id);
+                    if (access.hasAccess) {
+                        showMain();
+                    } else {
+                        showLogin();
+                    }
+                } catch (err) {
+                    loginError.textContent = err.message || '登入失敗';
+                    loginError.classList.remove('hidden');
+                    btn.disabled = false;
+                    btn.innerHTML = originalText;
                 }
-            } catch (err) {
-                errorDiv.textContent = err.message || '登入失敗';
-                errorDiv.classList.remove('hidden');
-            }
-        });
+            });
+        }
     </script>
 </body>
 </html>
