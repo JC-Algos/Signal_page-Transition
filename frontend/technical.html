@@ -528,7 +528,8 @@
 
         // ==================== AUTH LOGIC ====================
 
-        async function checkPremiumStatus(userId) {
+        // Check if user is logged in (any registered user can access free tools)
+        async function checkUserAccess(userId) {
             try {
                 const { data: profile, error } = await supabaseClient
                     .from('user_profiles')
@@ -536,13 +537,25 @@
                     .eq('id', userId)
                     .single();
 
-                if (error) return false;
+                if (error) {
+                    // If no profile exists, create one with 'free' tier
+                    if (error.code === 'PGRST116') {
+                        // No profile found - user is registered but no profile yet
+                        // They should still have access to free tools
+                        return { hasAccess: true, tier: 'free' };
+                    }
+                    return { hasAccess: false, tier: null };
+                }
 
-                const dbStatus = (profile.membership_status || '').toLowerCase().trim();
-                const stripeActive = profile.subscription_status === 'active';
-                return (dbStatus === 'premium') || (dbStatus === 'active') || stripeActive;
+                // Any registered user has access to free tools
+                const dbStatus = (profile.membership_status || 'free').toLowerCase().trim();
+                return { 
+                    hasAccess: true, 
+                    tier: dbStatus,
+                    isPremium: (dbStatus === 'premium') || (dbStatus === 'active') || profile.subscription_status === 'active'
+                };
             } catch (err) {
-                return false;
+                return { hasAccess: false, tier: null };
             }
         }
 
@@ -566,7 +579,7 @@
                 }
             });
 
-            // Check auth
+            // Check auth - any logged in user can access free tools
             try {
                 if (!supabaseClient) {
                     showLogin();
@@ -575,15 +588,16 @@
                 const { data: { user } } = await supabaseClient.auth.getUser();
                 
                 if (user) {
-                    const isPremium = await checkPremiumStatus(user.id);
-                    if (isPremium) {
+                    // Any registered user can access free tools
+                    const access = await checkUserAccess(user.id);
+                    if (access.hasAccess) {
                         showDashboard();
                         // Auto-analyze if ticker in URL
                         if (tickerParam) {
                             runAnalysis();
                         }
                     } else {
-                        showPremiumRequired();
+                        showLogin();
                     }
                 } else {
                     showLogin();
@@ -615,11 +629,12 @@
                     
                     if (error) throw error;
                     
-                    const isPremium = await checkPremiumStatus(data.user.id);
-                    if (isPremium) {
+                    // Any registered user can access free tools
+                    const access = await checkUserAccess(data.user.id);
+                    if (access.hasAccess) {
                         showDashboard();
                     } else {
-                        showPremiumRequired();
+                        showLogin();
                     }
                 } catch (err) {
                     loginError.textContent = err.message || '登入失敗';
