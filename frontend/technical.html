@@ -401,9 +401,6 @@
                     <a href="index.html" class="btn btn-outline-cyan">
                         <i class="bi bi-house-door"></i> 首頁
                     </a>
-                    <a href="signals.html" class="btn btn-outline-cyan">
-                        <i class="bi bi-broadcast"></i> 信號
-                    </a>
                     <button class="btn btn-outline-cyan" onclick="logout()">
                         <i class="bi bi-box-arrow-right"></i> 登出
                     </button>
@@ -434,20 +431,6 @@
                     <button class="btn btn-cyan w-100 mb-3" id="analyzeBtn" onclick="runAnalysis()">
                         <i class="bi bi-lightning-charge me-2"></i>開始分析
                     </button>
-
-                    <div class="mb-3">
-                        <small class="text-muted">快速選擇熱門股票:</small>
-                        <div class="d-flex flex-wrap gap-2 mt-2">
-                            <button class="btn btn-sm btn-outline-cyan" onclick="quickSelect('0700', 'HK')">騰訊</button>
-                            <button class="btn btn-sm btn-outline-cyan" onclick="quickSelect('9988', 'HK')">阿里</button>
-                            <button class="btn btn-sm btn-outline-cyan" onclick="quickSelect('9618', 'HK')">京東</button>
-                            <button class="btn btn-sm btn-outline-cyan" onclick="quickSelect('NVDA', 'US')">NVDA</button>
-                            <button class="btn btn-sm btn-outline-cyan" onclick="quickSelect('AAPL', 'US')">AAPL</button>
-                            <button class="btn btn-sm btn-outline-cyan" onclick="quickSelect('TSLA', 'US')">TSLA</button>
-                        </div>
-                    </div>
-
-                    <hr style="border-color: rgba(34, 211, 238, 0.2);">
 
                     <div id="quickStats" style="display: none;">
                         <h5><i class="bi bi-speedometer2 me-2"></i>快速數據</h5>
@@ -763,9 +746,24 @@
                     <div class="sub">${rrg.quadrant_zh || ''}</div>
                 </div>
                 <div class="stat-item">
+                    <div class="label">RS-Momentum</div>
+                    <div class="value">${rrg.rs_momentum || '--'}</div>
+                    <div class="sub">${rrg.rs_momentum >= 100 ? '↑ 增強' : '↓ 減弱'}</div>
+                </div>
+                <div class="stat-item">
                     <div class="label">PoC</div>
                     <div class="value">${volume.poc || '--'}</div>
-                    <div class="sub">${volume.position_zh || ''}</div>
+                    <div class="sub">控制點</div>
+                </div>
+                <div class="stat-item">
+                    <div class="label">VAH</div>
+                    <div class="value">${volume.vah || '--'}</div>
+                    <div class="sub">價值區高</div>
+                </div>
+                <div class="stat-item">
+                    <div class="label">VAL</div>
+                    <div class="value">${volume.val || '--'}</div>
+                    <div class="sub">價值區低</div>
                 </div>
             `;
 
