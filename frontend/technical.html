@@ -470,27 +470,27 @@
 
                 <!-- Results -->
                 <div id="resultSection" class="result-section">
-                    <!-- Charts Row -->
-                    <div class="row mb-4">
-                        <div class="col-lg-6">
-                            <div class="chart-container">
-                                <h6><i class="bi bi-bar-chart-fill me-2"></i>技術圖表 (6M)</h6>
-                                <img id="technicalChart" src="" alt="Technical Chart" onclick="enlargeChart(this)">
-                            </div>
-                        </div>
-                        <div class="col-lg-6">
-                            <div class="chart-container">
+                    <!-- Technical Chart - Full Width -->
+                    <div class="chart-container mb-4">
+                        <h6><i class="bi bi-bar-chart-fill me-2"></i>技術圖表 (6M)</h6>
+                        <img id="technicalChart" src="" alt="Technical Chart" onclick="enlargeChart(this)" style="width: 100%;">
+                    </div>
+
+                    <!-- RRG + Report Row -->
+                    <div class="row">
+                        <div class="col-lg-5 col-md-6">
+                            <div class="chart-container" style="height: 100%;">
                                 <h6><i class="bi bi-pie-chart-fill me-2"></i>RRG 資產輪動圖</h6>
                                 <img id="rrgChart" src="" alt="RRG Chart" onclick="enlargeChart(this)">
                             </div>
                         </div>
-                    </div>
-
-                    <!-- TA Report -->
-                    <div class="card-dark">
-                        <h5><i class="bi bi-file-text me-2"></i>技術分析報告</h5>
-                        <div class="report-box" id="reportContent">
-                            <!-- Report will be inserted here -->
+                        <div class="col-lg-7 col-md-6">
+                            <div class="card-dark" style="height: 100%; margin-bottom: 0;">
+                                <h5><i class="bi bi-file-text me-2"></i>技術分析報告</h5>
+                                <div class="report-box" id="reportContent" style="max-height: 500px;">
+                                    <!-- Report will be inserted here -->
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </div>
