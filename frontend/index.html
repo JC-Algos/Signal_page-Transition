@@ -1,0 +1,1190 @@
+<!DOCTYPE html>
+<html lang="zh-HK">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>JC Algos - 終極股票市場分析師</title>
+
+    <script src="https://js.stripe.com/v3/"></script>
+    <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/animejs/3.2.1/anime.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/typed.js/2.0.12/typed.min.js"></script>
+    <script src="https://unpkg.com/splitting@1.0.6/dist/splitting.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/plotly.js/3.0.3/plotly.min.js"></script>
+    <link href="https://unpkg.com/splitting@1.0.6/dist/splitting.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700;800&family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <script src="api.js?v=1.0"></script>
+    <style>
+        :root {
+            --primary: #1a2332;
+            --secondary: #d4af37;
+            --accent: #6b8e5a;
+            --warning: #f59e0b;
+            --error: #dc2626;
+            --neutral: #64748b;
+            --bg: #fafafa;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background: linear-gradient(135deg, #1a2332 0%, #2d3748 50%, #1a2332 100%);
+            min-height: 100vh;
+        }
+
+        /* Button Styles */
+        .btn-gold { background: linear-gradient(to right, #d4af37, #f3d056); color: black; font-weight: bold; }
+        .btn-gold:hover { transform: scale(1.05); }
+
+        .hero-bg {
+            background: url('resources/hero-bg.jpg') center/cover;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .hero-bg::before {
+            content: '';
+            position: absolute;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: linear-gradient(135deg, rgba(26, 35, 50, 0.8) 0%, rgba(45, 55, 72, 0.6) 100%);
+        }
+
+        .glass-effect {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        .gradient-text {
+            background: linear-gradient(135deg, #d4af37 0%, #6b8e5a 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .card-hover { transition: all 0.3s ease; }
+        .card-hover:hover { transform: translateY(-8px) rotateX(5deg); box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3); }
+
+        .chart-container {
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 16px;
+            padding: 24px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+            min-height: 350px;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        #ema20-chart, #ema50-chart, #ema200-chart { height: 280px !important; width: 100% !important; flex-grow: 1; }
+        .chart-container h3 { margin-bottom: 1rem; flex-shrink: 0; }
+
+        .nav-blur { backdrop-filter: blur(20px); background: rgba(26, 35, 50, 0.9); }
+        .typing-cursor { animation: blink 1s infinite; }
+        @keyframes blink { 0%, 50% { opacity: 1; } 51%, 100% { opacity: 0; } }
+
+        .particle { position: absolute; width: 4px; height: 4px; background: rgba(212, 175, 55, 0.6); border-radius: 50%; animation: float 6s ease-in-out infinite; }
+        @keyframes float { 0%, 100% { transform: translateY(0px) rotate(0deg); } 50% { transform: translateY(-20px) rotate(180deg); } }
+
+        .market-indicator { display: inline-block; width: 12px; height: 12px; border-radius: 50%; margin-right: 8px; }
+        .bull-market { background: #6b8e5a; }
+        .bear-market { background: #dc2626; }
+        .neutral-market { background: #f59e0b; }
+
+        .data-table { max-height: 600px; overflow-y: auto; }
+        .data-table::-webkit-scrollbar { width: 6px; }
+        .data-table::-webkit-scrollbar-track { background: rgba(255, 255, 255, 0.1); }
+        .data-table::-webkit-scrollbar-thumb { background: rgba(212, 175, 55, 0.5); border-radius: 3px; }
+
+        .data-card { transition: all 0.3s ease; }
+        .data-card:hover { transform: translateY(-2px); box-shadow: 0 4px 12px rgba(0,0,0,0.15); }
+
+        [data-loading="true"] { animation: pulse 1.5s cubic-bezier(0.4, 0, 0.6, 1) infinite; }
+        @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }
+
+        .top10-table { width: 100%; border-collapse: collapse; font-size: 0.9rem; }
+        .top10-table th { background: #f3f4f6; padding: 10px 8px; text-align: left; font-weight: 600; border-bottom: 2px solid #e5e7eb; }
+        .top10-table td { padding: 8px; border-bottom: 1px solid #e5e7eb; }
+        .top10-table tr:hover { background: #f9fafb; }
+
+        /* Login Modal Styles */
+        .modal-overlay {
+            display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0, 0, 0, 0.7); z-index: 9999;
+            align-items: center; justify-content: center;
+        }
+        .modal-overlay.active { display: flex; }
+
+        .modal-content {
+            background: white; border-radius: 16px; padding: 40px; max-width: 450px; width: 90%;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3); animation: modalSlideIn 0.3s ease-out; position: relative;
+        }
+
+        @keyframes modalSlideIn { from { opacity: 0; transform: translateY(-50px); } to { opacity: 1; transform: translateY(0); } }
+
+        .modal-close { position: absolute; top: 20px; right: 20px; font-size: 24px; cursor: pointer; color: #666; }
+        .modal-close:hover { color: #333; }
+
+        .tab-buttons { display: flex; border-bottom: 2px solid #e5e7eb; margin-bottom: 24px; }
+        .tab-button {
+            flex: 1; padding: 12px; border: none; background: none; cursor: pointer;
+            font-weight: 600; color: #6b7280; transition: all 0.3s; border-bottom: 3px solid transparent; margin-bottom: -2px;
+        }
+        .tab-button.active { color: #d4af37; border-bottom-color: #d4af37; }
+        .tab-content { display: none; }
+        .tab-content.active { display: block; }
+        .success-message { background: #d1fae5; border: 1px solid #10b981; color: #065f46; padding: 12px; border-radius: 8px; margin-bottom: 16px; display: none; }
+        .info-message { background: #dbeafe; border: 1px solid #3b82f6; color: #1e40af; padding: 12px; border-radius: 8px; margin-bottom: 16px; font-size: 14px; }
+    </style>
+</head>
+<body>
+    <div id="login-modal" class="modal-overlay">
+        <div class="modal-content">
+            <span class="modal-close" onclick="closeLoginModal()">&times;</span>
+            <h2 class="text-2xl font-bold mb-2 text-gray-800">JC Algos 會員系統</h2>
+            <p class="text-gray-600 mb-6 text-sm">專業股票市場分析平台</p>
+
+            <div class="tab-buttons">
+                <button id="signin-tab-btn" class="tab-button active" onclick="switchTab(event, 'signin')">登入</button>
+                <button id="signup-tab-btn" class="tab-button" onclick="switchTab(event, 'signup')">註冊</button>
+            </div>
+
+            <div id="auth-success-message" class="success-message"></div>
+
+            <div id="signin-tab" class="tab-content active">
+                <form id="signin-form">
+                    <div class="mb-4">
+                        <label for="signin-email" class="block text-sm font-semibold text-gray-700 mb-2">電子郵件</label>
+                        <input type="email" id="signin-email" required class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-yellow-500 focus:border-transparent">
+                    </div>
+                    <div class="mb-6">
+                        <label for="signin-password" class="block text-sm font-semibold text-gray-700 mb-2">密碼</label>
+                        <input type="password" id="signin-password" required class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-yellow-500 focus:border-transparent">
+                    </div>
+                    <div id="signin-error" class="hidden mb-4 p-3 bg-red-100 border border-red-400 text-red-700 rounded-lg text-sm"></div>
+                    <button type="submit" class="w-full bg-gradient-to-r from-yellow-500 to-yellow-600 text-white py-3 rounded-lg hover:from-yellow-600 hover:to-yellow-700 transition-all transform hover:scale-105 font-semibold">
+                        登入
+                    </button>
+                </form>
+            </div>
+
+            <div id="signup-tab" class="tab-content">
+                <div class="info-message">
+                    歡迎註冊！創建帳戶後，您可以試用免費工具，或訂閱以解鎖進階功能。
+                </div>
+                <form id="signup-form">
+                    <div class="mb-4">
+                        <label for="signup-name" class="block text-sm font-semibold text-gray-700 mb-2">姓名</label>
+                        <input type="text" id="signup-name" required class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-yellow-500 focus:border-transparent">
+                    </div>
+                    <div class="mb-4">
+                        <label for="signup-email" class="block text-sm font-semibold text-gray-700 mb-2">電子郵件</label>
+                        <input type="email" id="signup-email" required class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-yellow-500 focus:border-transparent">
+                    </div>
+                    <div class="mb-6">
+                        <label for="signup-password" class="block text-sm font-semibold text-gray-700 mb-2">密碼</label>
+                        <input type="password" id="signup-password" required minlength="6" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-yellow-500 focus:border-transparent">
+                        <p class="text-xs text-gray-500 mt-1">密碼至少需要 6 個字符</p>
+                    </div>
+                    <div id="signup-error" class="hidden mb-4 p-3 bg-red-100 border border-red-400 text-red-700 rounded-lg text-sm"></div>
+                    <button type="submit" class="w-full bg-gradient-to-r from-green-500 to-green-600 text-white py-3 rounded-lg hover:from-green-600 hover:to-green-700 transition-all transform hover:scale-105 font-semibold">
+                        註冊帳號
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <nav class="fixed top-0 left-0 right-0 z-50 nav-blur border-b border-white/10">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between items-center h-16">
+                <div class="flex items-center space-x-4">
+                    <div class="text-2xl font-bold gradient-text font-serif">JC Algos</div>
+                    <div class="hidden md:block text-sm text-white/80">終極股票市場分析師</div>
+                </div>
+
+                <div class="flex items-center space-x-6">
+                    
+                    <button id="subscribe-btn" onclick="startStripeCheckout()" style="display:none;" class="btn-gold px-4 py-2 rounded-lg transition-all transform hover:scale-105 text-sm font-semibold flex items-center gap-2">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                        訂閱會員
+                    </button>
+
+                    <button id="cancel-subscription-btn" onclick="handleCancelSubscription()" style="display: none;" class="bg-gradient-to-r from-red-500 to-red-600 text-white px-4 py-2 rounded-lg hover:from-red-600 hover:to-red-700 transition-all transform hover:scale-105 text-sm font-semibold flex items-center gap-2">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                        </svg>
+                        管理訂閱
+                    </button>
+
+                    <button id="login-logout-btn" onclick="handleLoginLogout()" class="bg-gradient-to-r from-yellow-500 to-yellow-600 text-white px-4 py-2 rounded-lg hover:from-yellow-600 hover:to-yellow-700 transition-all transform hover:scale-105 text-sm font-semibold flex items-center gap-2">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 16l-4-4m0 0l4-4m-4 4h14m-5 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h7a3 3 0 013 3v1"></path>
+                        </svg>
+                        <span id="login-btn-text">登入</span>
+                    </button>
+
+                    <div class="relative">
+                        <button id="tools-dropdown-btn" class="text-white hover:text-yellow-400 transition-colors text-sm font-medium flex items-center gap-1 px-4 py-2 rounded-lg hover:bg-white/10">
+                            付費工具
+                            <svg class="w-4 h-4 transition-transform" id="dropdown-arrow" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+                            </svg>
+                        </button>
+                        <div id="tools-dropdown-menu" class="absolute right-0 mt-2 w-64 bg-white rounded-lg shadow-xl hidden z-50">
+                            <div class="py-2">
+                                <a href="#" onclick="checkLoginAndRedirect(event, 'portfolio.html')" class="block px-4 py-2 text-gray-800 hover:bg-gray-100 transition-colors text-sm">組合管理</a>
+                                <a href="#" onclick="checkLoginAndRedirect(event, 'economic_data_analysis.html')" class="block px-4 py-2 text-gray-800 hover:bg-gray-100 transition-colors text-sm">中美主要經濟數據一覽</a>
+                                <a href="#" onclick="checkLoginAndRedirect(event, 'asset_rotation_analysis.html')" class="block px-4 py-2 text-gray-800 hover:bg-gray-100 transition-colors text-sm">資產輪動分析</a>
+                                <a href="#" onclick="checkLoginAndRedirect(event, 'relative_strength_analysis.html')" class="block px-4 py-2 text-gray-800 hover:bg-gray-100 transition-colors text-sm">相對強弱分析</a>
+                                <a href="#" onclick="checkLoginAndRedirect(event, 'fundamental_analysis.html')" class="block px-4 py-2 text-gray-800 hover:bg-gray-100 transition-colors text-sm">公司基本面及估值</a>
+                                <a href="#" onclick="checkLoginAndRedirect(event, 'hsi_spx_analysis.html')" class="block px-4 py-2 text-gray-800 hover:bg-gray-100 transition-colors text-sm">恆生及標普500指數統計分析</a>
+                                <a href="#" onclick="checkLoginAndRedirect(event, 'pinbar_analysis.html')" class="block px-4 py-2 text-gray-800 hover:bg-gray-100 transition-colors text-sm">Pinbar</a>
+                                <a href="#" onclick="checkLoginAndRedirect(event, 'JC_Signals.html')" class="block px-4 py-2 text-gray-800 hover:bg-gray-100 transition-colors text-sm">JC Algos 信號</a>
+
+
+                            </div>
+                        </div>
+                    </div>
+
+                    <a href="technical.html" class="bg-gradient-to-r from-cyan-500 to-blue-600 text-white px-4 py-2 rounded-lg hover:from-cyan-600 hover:to-blue-700 transition-all transform hover:scale-105 text-sm font-semibold">
+                        登記免費工具
+                    </a>
+                    <a href="index-retirement.html" class="bg-gradient-to-r from-emerald-500 to-teal-600 text-white px-4 py-2 rounded-lg hover:from-emerald-600 hover:to-teal-700 transition-all transform hover:scale-105 text-sm font-semibold">
+                        退休計算機
+                    </a>
+                    <a href="index-us.html" class="bg-gradient-to-r from-red-500 to-red-600 text-white px-4 py-2 rounded-lg hover:from-red-600 hover:to-red-700 transition-all transform hover:scale-105 text-sm font-semibold">
+                        US 美股
+                    </a>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <section class="hero-bg min-h-screen flex items-center justify-center relative pt-16">
+        <div id="particles" class="absolute inset-0"></div>
+
+        <div class="relative z-10 text-center max-w-4xl mx-auto px-4">
+            <h1 class="text-5xl md:text-7xl font-bold text-white mb-6 font-serif" data-splitting>
+                終極股票市場分析師
+            </h1>
+            <div class="text-xl md:text-2xl text-white/90 mb-8">
+                <span id="typed-text"></span>
+            </div>
+            <p class="text-lg text-white/80 mb-12 max-w-2xl mx-auto leading-relaxed">
+                利用先進的算法和重要數據分析，為您提供專業的港股市場洞察。
+                從技術分析到基本面研究，從市場寬度到趨勢預測，
+                讓您的投資決策更加精準。
+            </p>
+        </div>
+    </section>
+
+    <section class="py-16 px-4">
+        <div class="max-w-7xl mx-auto">
+            <div class="text-center mb-12">
+                <h2 class="text-3xl font-bold text-white mb-3 font-serif">HKEX 南向資金數據</h2>
+                <p class="text-lg text-white/80">港股通實時交易數據與十大成交股份</p>
+            </div>
+
+            <div class="bg-white rounded-lg shadow-md p-3 mb-6 border border-gray-200">
+                <div class="flex items-center gap-3 flex-wrap">
+                    <label for="southbound-date-input" class="text-sm font-semibold text-gray-800">選擇日期：</label>
+                    <input type="date" id="southbound-date-input"
+                           class="px-3 py-1.5 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm">
+                    <button id="southbound-refresh-btn"
+                            class="px-4 py-1.5 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition text-sm font-medium">
+                        刷新數據
+                    </button>
+                    <span class="text-xs text-orange-600 font-medium">(僅提供最近3個月數據)</span>
+                    <div class="ml-auto">
+                        <span class="text-gray-600 text-sm">數據日期：</span>
+                        <span id="southbound-date" class="font-semibold text-blue-600 text-sm">--</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="mb-8">
+                <h3 class="text-2xl font-bold mb-4 text-center text-white">合計 (Combined Total)</h3>
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3">
+                    <div class="data-card bg-gradient-to-br from-green-50 to-green-100 rounded-lg shadow-md p-4 border border-green-200">
+                        <h4 class="text-xs text-gray-700 mb-1">總買入成交額</h4>
+                        <p id="combined-buy-turnover" data-southbound class="text-xl font-bold text-green-700" data-loading="true">載入中...</p>
+                    </div>
+                    <div class="data-card bg-gradient-to-br from-red-50 to-red-100 rounded-lg shadow-md p-4 border border-red-200">
+                        <h4 class="text-xs text-gray-700 mb-1">總賣出成交額</h4>
+                        <p id="combined-sell-turnover" data-southbound class="text-xl font-bold text-red-700" data-loading="true">載入中...</p>
+                    </div>
+                    <div class="data-card bg-gradient-to-br from-blue-50 to-blue-100 rounded-lg shadow-md p-4 border border-blue-200">
+                        <h4 class="text-xs text-gray-700 mb-1">總成交額</h4>
+                        <p id="combined-total-turnover" data-southbound class="text-xl font-bold text-blue-700" data-loading="true">載入中...</p>
+                    </div>
+                    <div class="data-card bg-gradient-to-br from-purple-50 to-purple-100 rounded-lg shadow-md p-4 border border-purple-200">
+                        <h4 class="text-xs text-gray-700 mb-1">總淨買入</h4>
+                        <p id="combined-net-buy-sell" data-southbound class="text-xl font-bold text-purple-700" data-loading="true">載入中...</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-5">
+
+                <div class="space-y-4">
+                    <h3 class="text-xl font-bold text-white">滬股通 (Shanghai Connect)</h3>
+
+                    <div class="grid grid-cols-2 gap-3">
+                        <div class="data-card bg-white rounded-lg shadow-md p-3 border border-gray-200">
+                            <h4 class="text-xs text-gray-600 mb-1">買入成交額</h4>
+                            <p id="sh-buy-turnover" data-southbound class="text-lg font-bold text-green-600" data-loading="true">載入中...</p>
+                        </div>
+                        <div class="data-card bg-white rounded-lg shadow-md p-3 border border-gray-200">
+                            <h4 class="text-xs text-gray-600 mb-1">賣出成交額</h4>
+                            <p id="sh-sell-turnover" data-southbound class="text-lg font-bold text-red-600" data-loading="true">載入中...</p>
+                        </div>
+                        <div class="data-card bg-white rounded-lg shadow-md p-3 border border-gray-200">
+                            <h4 class="text-xs text-gray-600 mb-1">總成交額</h4>
+                            <p id="sh-total-turnover" data-southbound class="text-lg font-bold text-blue-600" data-loading="true">載入中...</p>
+                        </div>
+                        <div class="data-card bg-white rounded-lg shadow-md p-3 border border-gray-200">
+                            <h4 class="text-xs text-gray-600 mb-1">淨買入</h4>
+                            <p id="sh-net-buy-sell" data-southbound class="text-lg font-bold text-purple-600" data-loading="true">載入中...</p>
+                        </div>
+                    </div>
+
+                    <div class="chart-container p-4">
+                        <h4 class="text-base font-semibold mb-3 text-gray-800">十大成交股份</h4>
+                        <div id="sh-top10-table" class="overflow-x-auto">
+                            <p class="text-gray-500 text-center py-3 text-sm">載入中...</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="space-y-4">
+                    <h3 class="text-xl font-bold text-white">深股通 (Shenzhen Connect)</h3>
+
+                    <div class="grid grid-cols-2 gap-3">
+                        <div class="data-card bg-white rounded-lg shadow-md p-3 border border-gray-200">
+                            <h4 class="text-xs text-gray-600 mb-1">買入成交額</h4>
+                            <p id="sz-buy-turnover" data-southbound class="text-lg font-bold text-green-600" data-loading="true">載入中...</p>
+                        </div>
+                        <div class="data-card bg-white rounded-lg shadow-md p-3 border border-gray-200">
+                            <h4 class="text-xs text-gray-600 mb-1">賣出成交額</h4>
+                            <p id="sz-sell-turnover" data-southbound class="text-lg font-bold text-red-600" data-loading="true">載入中...</p>
+                        </div>
+                        <div class="data-card bg-white rounded-lg shadow-md p-3 border border-gray-200">
+                            <h4 class="text-xs text-gray-600 mb-1">總成交額</h4>
+                            <p id="sz-total-turnover" data-southbound class="text-lg font-bold text-blue-600" data-loading="true">載入中...</p>
+                        </div>
+                        <div class="data-card bg-white rounded-lg shadow-md p-3 border border-gray-200">
+                            <h4 class="text-xs text-gray-600 mb-1">淨買入</h4>
+                            <p id="sz-net-buy-sell" data-southbound class="text-lg font-bold text-purple-600" data-loading="true">載入中...</p>
+                        </div>
+                    </div>
+
+                    <div class="chart-container p-4">
+                        <h4 class="text-base font-semibold mb-3 text-gray-800">十大成交股份</h4>
+                        <div id="sz-top10-table" class="overflow-x-auto">
+                            <p class="text-gray-500 text-center py-3 text-sm">載入中...</p>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+    </section>
+
+    <section id="dashboard" class="py-20 px-4 bg-white/5">
+        <div class="max-w-7xl mx-auto">
+            <div class="text-center mb-16">
+                <h2 class="text-4xl font-bold text-white mb-4 font-serif">市場概覽</h2>
+                <p class="text-xl text-white/80">掌握香港股市動態 - 基於恆生指數成分股的市場寬度分析</p>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-8 mb-16">
+                <div class="chart-container card-hover">
+                    <h3 class="text-xl font-semibold mb-4 text-gray-800 flex items-center">
+                        <span class="market-indicator bull-market"></span>
+                        高於20日EMA
+                    </h3>
+                    <div id="ema20-chart" class="h-64"></div>
+                </div>
+
+                <div class="chart-container card-hover">
+                    <h3 class="text-xl font-semibold mb-4 text-gray-800 flex items-center">
+                        <span class="market-indicator neutral-market"></span>
+                        高於50日EMA
+                    </h3>
+                    <div id="ema50-chart" class="h-64"></div>
+                </div>
+
+                <div class="chart-container card-hover">
+                    <h3 class="text-xl font-semibold mb-4 text-gray-800 flex items-center">
+                        <span class="market-indicator bear-market"></span>
+                        高於200日EMA
+                    </h3>
+                    <div id="ema200-chart" class="h-64"></div>
+                </div>
+            </div>
+
+            <div class="chart-container mb-16">
+                <div class="flex justify-between items-center mb-6">
+                    <h3 class="text-2xl font-bold text-gray-800">恆生指數市場寬度綜合評分</h3>
+                    <div class="text-right">
+                        <div class="text-3xl font-bold gradient-text" id="market-score" data-loading="true">載入中...</div>
+                        <div class="text-sm text-gray-600" id="market-condition-label" data-loading="true">計算市場狀況...</div>
+                    </div>
+                </div>
+                <div class="w-full bg-gray-200 rounded-full h-4 mb-4">
+                    <div class="bg-gradient-to-r from-green-500 to-green-600 h-4 rounded-full transition-all duration-1000" style="width: 0%" id="score-bar"></div>
+                </div>
+                <div class="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
+                    <div class="text-center">
+                        <div class="font-semibold text-gray-800">20日EMA</div>
+                        <div class="text-green-600" data-percentage="ema20" data-loading="true">載入中...</div>
+                    </div>
+                    <div class="text-center">
+                        <div class="font-semibold text-gray-800">50日EMA</div>
+                        <div class="text-yellow-600" data-percentage="ema50" data-loading="true">載入中...</div>
+                    </div>
+                    <div class="text-center">
+                        <div class="font-semibold text-gray-800">200日EMA</div>
+                        <div class="text-green-600" data-percentage="ema200" data-loading="true">載入中...</div>
+                    </div>
+                    <div class="text-center">
+                        <div class="font-semibold text-gray-800">更新時間</div>
+                        <div class="text-gray-600" id="update-time" data-loading="true">載入中...</div>
+                    </div>
+                </div>
+
+                <div id="market-advice-container" class="mt-6">
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section class="py-20 px-4">
+        <div class="max-w-7xl mx-auto">
+            <div class="text-center mb-16">
+                <h2 class="text-4xl font-bold text-white mb-4 font-serif">香港股票市場數據</h2>
+                <p id="stock-data-heading" class="text-xl text-white/80">熱門港股的實時數據與技術指標分析</p>
+            </div>
+
+            <div class="chart-container">
+                <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">
+                    <h3 class="text-2xl font-bold text-gray-800">市場焦點股份數據</h3>
+                    <div class="flex gap-4">
+                        <select id="sort-select" class="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-yellow-500">
+                            <option value="symbol">股票代碼</option>
+                            <option value="change">日漲跌幅</option>
+                            <option value="ema20">20日EMA偏離</option>
+                            <option value="ema200">200日EMA偏離</option>
+                            <option value="volume">成交量比率</option>
+                            <option value="rsi">RSI</option>
+                        </select>
+                        <button id="refresh-btn" class="bg-gradient-to-r from-blue-500 to-blue-600 text-white px-6 py-2 rounded-lg hover:from-blue-600 hover:to-blue-700 transition-all transform hover:scale-105">
+                            🔄 刷新
+                        </button>
+                    </div>
+                </div>
+
+                <div class="mb-4 p-4 bg-blue-50 rounded-lg border border-blue-200">
+                    <h4 class="font-semibold text-blue-800 mb-2">數據說明：</h4>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-2 text-sm text-blue-700">
+                        <div>• <strong>日漲跌幅 %</strong>: 當日價格相對前一日的百分比變化</div>
+                        <div>• <strong>20/200日EMA偏離 %</strong>: 當前價格相對移動平均線的偏離百分比</div>
+                        <div>• <strong>成交量比率</strong>: 當日成交量相對10日平均成交量的比率</div>
+                        <div>• <strong>RSI</strong>: 14日相對強弱指標 (>70超買, <30超賣)</div>
+                    </div>
+                </div>
+
+                <div class="data-table">
+                    <table class="w-full">
+                        <thead class="bg-gray-50 sticky top-0">
+                            <tr>
+                                <th class="px-4 py-3 text-left font-semibold text-gray-800">股票代碼</th>
+                                <th class="px-4 py-3 text-right font-semibold text-gray-800">收市價</th>
+                                <th class="px-4 py-3 text-right font-semibold text-gray-800">日漲跌幅 %</th>
+                                <th class="px-4 py-3 text-right font-semibold text-gray-800">20日EMA偏離 %</th>
+                                <th class="px-4 py-3 text-right font-semibold text-gray-800">200日EMA偏離 %</th>
+                                <th class="px-4 py-3 text-right font-semibold text-gray-800">成交量比率</th>
+                                <th class="px-4 py-3 text-right font-semibold text-gray-800">RSI</th>
+                            </tr>
+                        </thead>
+                        <tbody id="stock-table-body">
+                            <tr>
+                                <td colspan="7" class="text-center py-8 text-gray-500">
+                                    <div class="flex flex-col items-center">
+                                        <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mb-4"></div>
+                                        <div>正在載入股票數據...</div>
+                                    </div>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section class="py-20 px-4 bg-white/5">
+        <div class="max-w-7xl mx-auto">
+            <div class="text-center mb-16">
+                <h2 class="text-4xl font-bold text-white mb-4 font-serif">恆生指數週期性分析</h2>
+                <p class="text-xl text-white/80">歷史數據的季節性表現分析</p>
+            </div>
+
+            <div class="chart-container">
+                <div class="text-center mb-6">
+                    <h3 class="text-2xl font-bold text-gray-800 mb-4">恆生指數月度表現統計 (2005-2025)</h3>
+                </div>
+
+                <div class="flex justify-center">
+                    <img src="resources/HSI Seasonality.jpg" alt="恆生指數季節性分析" class="max-w-full h-auto rounded-lg shadow-lg border border-gray-200" onerror="this.onerror=null; this.src='resources/HSI_Seasonality.jpg';">
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <footer class="py-12 px-4 border-t border-white/10">
+        <div class="max-w-7xl mx-auto">
+            <div class="text-center mb-8">
+                <div class="text-2xl font-bold gradient-text font-serif mb-4">JC Algos</div>
+                <p class="text-white/60 mb-6">專業的股票市場分析平台</p>
+
+                <div class="mb-6">
+                    <p class="text-white text-base mb-2">支援電郵: <a href="mailto:support@jc-algos.com" class="text-yellow-400 hover:text-yellow-300 transition-colors">support@jc-algos.com</a></p>
+                </div>
+
+                <div class="text-sm text-white/40 mb-8">
+                    © 2025 JC Algos. 保留所有權利。 |
+                    <a href="https://www.patreon.com/c/JC_Algo" class="text-yellow-400 hover:text-yellow-300">訂閱支持</a>
+                </div>
+            </div>
+        </div>
+    </footer>
+
+    <script>
+        // Define global variables to prevent "not defined" errors if loading fails
+        window.supabaseClient = null;
+        window.SupabaseAuth = null;
+
+        // 3. STRIPE CONFIGURATION (RESTORED)
+        const SUPABASE_URL = 'https://nwhyoravkuyiuewlfgfw.supabase.co';
+        const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im53aHlvcmF2a3V5aXVld2xmZ2Z3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njc3MTU5NTgsImV4cCI6MjA4MzI5MTk1OH0.kNjZpRwdYDLHNCjscq6suOGz2PNst8FNAVm5FsS87VI';
+        
+        // YOUR LIVE PUBLIC KEY
+        const STRIPE_PUBLIC_KEY = 'pk_live_51SkjJU1JIZhXOZpFiEgssBJoAAdZZUiaqzfrA7pZxzPLj6A4Z5DT73pLbhjTVSi7hq2Detl1BC3sGydpHlYByGZ5006nAJzg0G';
+
+        let stripe = null;
+
+        // Safe Initialization Check
+        if (typeof window.supabase !== 'undefined' && window.supabase.createClient) {
+            try {
+                // Initialize client
+                window.supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+                
+                // For compatibility with any legacy code that uses 'supabase' variable directly
+                const supabase = window.supabaseClient;
+
+                // Auth helper functions
+                window.SupabaseAuth = {
+                    // Get current user
+                    async getCurrentUser() {
+                        const { data: { user }, error } = await supabase.auth.getUser();
+                        if (error) {
+                            console.error('Error getting user:', error);
+                            return null;
+                        }
+                        return user;
+                    },
+
+                    // Get user profile with membership info
+                    async getUserProfile(userId) {
+                        const { data, error } = await supabase
+                            .from('user_profiles')
+                            .select('*')
+                            .eq('id', userId)
+                            .single();
+
+                        if (error) {
+                            console.error('Error fetching profile:', error);
+                            return null;
+                        }
+                        return data;
+                    },
+
+                    // Check if user has active membership
+                    async hasActiveMembership() {
+                        const user = await this.getCurrentUser();
+                        if (!user) return false;
+
+                        const profile = await this.getUserProfile(user.id);
+                        if (!profile) return false;
+
+                        return profile.membership_status !== 'blocked';
+                    },
+
+                    // Check if user has active subscription (for cancel button)
+                    async hasActiveSubscription() {
+                        const user = await this.getCurrentUser();
+                        if (!user) return false;
+
+                        const profile = await this.getUserProfile(user.id);
+                        if (!profile) return false;
+
+                        // Check if user has stripe_customer_id and active subscription
+                        return profile.stripe_customer_id && profile.subscription_status === 'active';
+                    },
+
+                    // Get Stripe Customer ID
+                    async getStripeCustomerId() {
+                        const user = await this.getCurrentUser();
+                        if (!user) return null;
+
+                        const profile = await this.getUserProfile(user.id);
+                        if (!profile) return null;
+
+                        return profile.stripe_customer_id;
+                    },
+
+                    // Sign up new user
+                    async signUp(email, password, fullName) {
+                        // Direct Signup, no Beta Check
+                        const { data, error } = await supabase.auth.signUp({
+                            email: email,
+                            password: password,
+                            options: { data: { full_name: fullName } }
+                        });
+                        return { data, error };
+                    },
+
+                    // Sign in existing user
+                    async signIn(email, password) {
+                        const { data, error } = await supabase.auth.signInWithPassword({
+                            email: email,
+                            password: password
+                        });
+
+                        return { data, error };
+                    },
+
+                    // Sign out
+                    async signOut() {
+                        const { error } = await supabase.auth.signOut();
+                        if (error) {
+                            console.error('Error signing out:', error);
+                            return false;
+                        }
+                        return true;
+                    },
+
+                    // Listen to auth state changes
+                    onAuthStateChange(callback) {
+                        return supabase.auth.onAuthStateChange(callback);
+                    },
+
+                    // Check if user is authenticated
+                    async isAuthenticated() {
+                        const user = await this.getCurrentUser();
+                        return !!user;
+                    },
+
+                    // Get user display name
+                    async getUserDisplayName() {
+                        const user = await this.getCurrentUser();
+                        if (!user) return null;
+
+                        const profile = await this.getUserProfile(user.id);
+                        if (profile && profile.full_name) {
+                            return profile.full_name;
+                        }
+
+                        return user.email.split('@')[0];
+                    }
+                };
+                console.log("Supabase initialized successfully.");
+            } catch (err) {
+                console.error("Supabase initialization crashed:", err);
+                initFallbackSupabase("Init Crash");
+            }
+        } else {
+            console.error('CRITICAL: Supabase library failed to load from CDN.');
+            initFallbackSupabase("Library Missing");
+        }
+
+        // Initialize Stripe
+        if (typeof Stripe !== 'undefined') {
+            stripe = Stripe(STRIPE_PUBLIC_KEY);
+        }
+
+        // Fallback function to prevent page errors
+        function initFallbackSupabase(reason) {
+            window.SupabaseAuth = {
+                isAuthenticated: async () => false,
+                signIn: async () => ({ error: { message: `系統錯誤: 無法載入登入模組 (${reason})。請檢查網絡或 AdBlock。` } }),
+                signUp: async () => ({ error: { message: "系統錯誤" } }),
+                signOut: async () => false,
+                getUserDisplayName: async () => null,
+                hasActiveSubscription: async () => false,
+                getStripeCustomerId: async () => null,
+                onAuthStateChange: () => {}
+            };
+        }
+    </script>
+
+    <script>
+        // ===== GLOBAL FUNCTIONS (must be outside DOMContentLoaded for onclick to work) =====
+
+        // Tab switching function
+        function switchTab(event, tabName) {
+            event.preventDefault();
+
+            // Hide all tab contents
+            const tabContents = document.getElementsByClassName('tab-content');
+            for (let content of tabContents) {
+                content.classList.remove('active');
+            }
+
+            // Remove active class from all buttons
+            const tabButtons = document.getElementsByClassName('tab-button');
+            for (let button of tabButtons) {
+                button.classList.remove('active');
+            }
+
+            // Show selected tab
+            document.getElementById(tabName + '-tab').classList.add('active');
+            event.currentTarget.classList.add('active');
+
+            // Clear error messages
+            document.getElementById('signin-error').classList.add('hidden');
+            document.getElementById('signup-error').classList.add('hidden');
+            document.getElementById('auth-success-message').style.display = 'none';
+        }
+
+        // 4. STRIPE CHECKOUT FUNCTION (FIXED)
+        async function startStripeCheckout() {
+            if (!window.SupabaseAuth) return alert("System not ready");
+        
+            const user = await window.SupabaseAuth.getCurrentUser();
+            if (!user) {
+                openLoginModal();
+                return;
+            }
+        
+            const btn = document.getElementById('subscribe-btn');
+            const originalText = btn.innerHTML;
+            btn.innerHTML = "處理中...";
+            btn.disabled = true;
+        
+            try {
+                // FIXED: Call checkout endpoint (not portal)
+                const response = await fetch('https://api.jc-algos.com/api/stripe/create-checkout-session', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        email: user.email,
+                        user_id: user.id,
+                        price_id: 'price_1SnjiK1JIZhXOZpFl8dhRnTu'  // monthly plan
+                    })
+                });
+        
+                const session = await response.json();
+        
+                if (session.url) {
+                    window.location.href = session.url;
+                } else if (session.id && stripe) {
+                    stripe.redirectToCheckout({ sessionId: session.id });
+                } else {
+                    alert("Error: " + (session.error || "Stripe not initialized"));
+                }
+        
+            } catch (err) {
+                console.error(err);
+                alert("Connection Error. Please try again.");
+            } finally {
+                btn.innerHTML = originalText;
+                btn.disabled = false;
+            }
+        }
+
+
+        // Handle Sign In
+        async function handleSignIn() {
+            const email = document.getElementById('signin-email').value.trim();
+            const password = document.getElementById('signin-password').value;
+            const errorDiv = document.getElementById('signin-error');
+
+            // Clear previous errors
+            errorDiv.classList.add('hidden');
+
+            try {
+                if (!window.SupabaseAuth) {
+                    throw new Error("SupabaseAuth not initialized");
+                }
+                
+                const { data, error } = await window.SupabaseAuth.signIn(email, password);
+
+                if (error) {
+                    errorDiv.textContent = error.message || '登入失敗，請檢查您的電子郵件和密碼';
+                    errorDiv.classList.remove('hidden');
+                    return;
+                }
+
+                // Sign in successful
+                closeLoginModal();
+                await updateLoginButton();
+
+                // Check for pending redirect
+                const pendingRedirect = sessionStorage.getItem('pendingRedirect');
+                if (pendingRedirect) {
+                    sessionStorage.removeItem('pendingRedirect');
+                    
+                    // Re-check permission (Premium Lock)
+                    const user = await window.SupabaseAuth.getCurrentUser();
+                    const profile = await window.SupabaseAuth.getUserProfile(user.id);
+                    if (profile && (profile.membership_status === 'premium' || profile.membership_status === 'active')) {
+                        window.location.href = pendingRedirect;
+                    } else {
+                        alert("登入成功！但此頁面需要付費會員權限。");
+                    }
+                } else {
+                    showSuccessMessage('登入成功！');
+                }
+            } catch (err) {
+                console.error('Sign in error:', err);
+                errorDiv.textContent = '發生錯誤，請稍後再試 (' + (err.message || 'Unknown') + ')';
+                errorDiv.classList.remove('hidden');
+            }
+        }
+
+        // Handle Sign Up
+        async function handleSignUp() {
+            const name = document.getElementById('signup-name').value.trim();
+            const email = document.getElementById('signup-email').value.trim();
+            const password = document.getElementById('signup-password').value;
+            const errorDiv = document.getElementById('signup-error');
+            const successDiv = document.getElementById('auth-success-message');
+
+            // Clear previous messages
+            errorDiv.classList.add('hidden');
+            successDiv.style.display = 'none';
+
+            // Validate inputs
+            if (!name || !email || !password) {
+                errorDiv.textContent = '請填寫所有欄位';
+                errorDiv.classList.remove('hidden');
+                return;
+            }
+
+            if (password.length < 6) {
+                errorDiv.textContent = '密碼至少需要 6 個字符';
+                errorDiv.classList.remove('hidden');
+                return;
+            }
+
+            try {
+                 if (!window.SupabaseAuth) {
+                    throw new Error("SupabaseAuth not initialized");
+                }
+
+                const { data, error } = await window.SupabaseAuth.signUp(email, password, name);
+
+                if (error) {
+                    errorDiv.textContent = error.message || '註冊失敗';
+                    errorDiv.classList.remove('hidden');
+                    return;
+                }
+
+                // Sign up successful - show verification message
+                successDiv.innerHTML = '<strong>註冊成功！</strong> 請檢查您的電子郵件以驗證您的帳號。驗證後即可登入。';
+                successDiv.style.display = 'block';
+
+                // Clear form
+                document.getElementById('signup-form').reset();
+
+                // Switch to sign in tab after 3 seconds
+                setTimeout(() => {
+                    const signinButton = document.querySelector('.tab-button');
+                    if (signinButton) {
+                        signinButton.click();
+                    }
+                }, 3000);
+
+            } catch (err) {
+                console.error('Sign up error:', err);
+                errorDiv.textContent = '發生錯誤，請稍後再試';
+                errorDiv.classList.remove('hidden');
+            }
+        }
+
+        // Modal functions
+        function openLoginModal() {
+            document.getElementById('login-modal').classList.add('active');
+        }
+
+        function closeLoginModal() {
+            document.getElementById('login-modal').classList.remove('active');
+            document.getElementById('signin-error').classList.add('hidden');
+            document.getElementById('signup-error').classList.add('hidden');
+            document.getElementById('auth-success-message').style.display = 'none';
+        }
+
+        // Handle login/logout button click
+        async function handleLoginLogout() {
+            if (!window.SupabaseAuth) {
+                alert("系統初始化未完成，請稍後再試");
+                return;
+            }
+
+            const isAuth = await window.SupabaseAuth.isAuthenticated();
+
+            if (isAuth) {
+                // Logout
+                const success = await window.SupabaseAuth.signOut();
+                if (success) {
+                    await updateLoginButton();
+                    alert('已成功登出');
+                    // Reload page to reset any authenticated state
+                    window.location.reload();
+                }
+            } else {
+                // Show login modal
+                openLoginModal();
+            }
+        }
+
+        // Handle Cancel Subscription button click (FINAL CLEAN VERSION)
+        async function handleCancelSubscription() {
+            if (!window.SupabaseAuth) {
+                alert("系統初始化未完成，請稍後再試");
+                return;
+            }
+
+            // Confirm with user
+            const confirmed = confirm('您確定要管理或取消訂閱嗎？\n\n點擊確定後，您將被導向至 Stripe 客戶管理頁面。');
+            if (!confirmed) return;
+
+            try {
+                const stripeCustomerId = await window.SupabaseAuth.getStripeCustomerId();
+                
+                if (!stripeCustomerId) {
+                    alert('找不到您的訂閱資料。請聯繫 support@jc-algos.com');
+                    return;
+                }
+
+                const user = await window.SupabaseAuth.getCurrentUser();
+                
+                // Call backend
+                const response = await fetch('https://api.jc-algos.com/api/stripe/create-portal-session', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ email: user.email })
+                });
+
+                const data = await response.json();
+
+                if (data.error) {
+                    alert('錯誤: ' + data.error);
+                    return;
+                }
+
+                if (data.url) {
+                    // Redirect to Stripe Customer Portal
+                    window.location.href = data.url;
+                } else {
+                    alert('無法建立管理頁面，請稍後再試');
+                }
+
+            } catch (err) {
+                console.error('Cancel subscription error:', err);
+                alert('發生連線錯誤，請稍後再試。');
+            }
+        }
+
+        // Check login and redirect to tool pages
+        async function checkLoginAndRedirect(event, targetPage) {
+            event.preventDefault();
+            
+            if (!window.SupabaseAuth) {
+                alert("系統錯誤: 認證模組未載入");
+                return;
+            }
+
+            const user = await window.SupabaseAuth.getCurrentUser();
+
+            if (user) {
+                // Check Premium Status
+                const profile = await window.SupabaseAuth.getUserProfile(user.id);
+                
+                if (profile && (profile.membership_status === 'premium' || profile.membership_status === 'active')) {
+                    window.location.href = targetPage;
+                } else {
+                    alert("🔒 此功能僅限付費會員使用 (Premium Only)。\n\n請點擊導航欄的「訂閱會員」以解鎖全部功能。");
+                }
+            } else {
+                // User is not logged in, save target and show modal
+                sessionStorage.setItem('pendingRedirect', targetPage);
+                openLoginModal();
+            }
+        }
+
+        // ==========================================
+        // 2. 身份驗證與 UI 邏輯 (FINAL FIXED VERSION)
+        // 位置：替換掉原本約 868-908 行的 updateLoginButton 函數
+        // ==========================================
+        
+        // 這裡定義 updateLoginButton (判斷是否隱藏按鈕)
+        async function updateLoginButton() {
+            if (!window.SupabaseAuth) return;
+
+            // 1. 抓取按鈕 DOM 元素
+            const subBtn = document.getElementById('subscribe-btn');
+            const cancelSubBtn = document.getElementById('cancel-subscription-btn');
+            const loginBtnText = document.getElementById('login-btn-text');
+
+            const isAuth = await window.SupabaseAuth.isAuthenticated();
+
+            if (!isAuth) {
+                // 未登入 -> 顯示訂閱按鈕
+                if (subBtn) subBtn.style.display = 'flex';
+                if (cancelSubBtn) cancelSubBtn.style.display = 'none';
+                if (loginBtnText) loginBtnText.textContent = '登入';
+                return;
+            }
+
+            // 2. 已登入 -> 獲取詳細資料
+            const user = await window.SupabaseAuth.getCurrentUser();
+            const profile = await window.SupabaseAuth.getUserProfile(user.id);
+            const displayName = await window.SupabaseAuth.getUserDisplayName();
+
+            // 更新名字
+            if (loginBtnText && displayName) {
+                loginBtnText.textContent = displayName.length > 8 ? displayName.substring(0, 8) + '...' : displayName;
+            }
+
+            // 3. 核心判斷 (VIP 邏輯)
+            // 將資料庫狀態轉小寫並去除空白，防止格式錯誤
+            const dbStatus = (profile.membership_status || '').toLowerCase().trim();
+            const stripeActive = profile.subscription_status === 'active';
+            
+            // 只要滿足其中一項，就是 VIP (包含 Beta 用戶)
+            const isVip = (dbStatus === 'premium') || (dbStatus === 'active') || stripeActive;
+
+            console.log("🔍 VIP 檢查:", user.email, "| DB狀態:", dbStatus, "| 結果:", isVip);
+
+            // 4. 按鈕顯示控制 (強制執行)
+            if (isVip) {
+                // 是 VIP -> 絕對隱藏訂閱按鈕
+                if (subBtn) {
+                    subBtn.style.display = 'none'; // 覆蓋 HTML 裡的 style
+                    subBtn.classList.add('hidden'); // 雙重保險 (需確保有 .hidden CSS 或依賴 display:none)
+                }
+
+                // 只有真的用 Stripe 付款的人，才顯示取消按鈕 (避免 Beta 用戶誤觸)
+                if (cancelSubBtn) {
+                    cancelSubBtn.style.display = (profile.stripe_customer_id && stripeActive) ? 'flex' : 'none';
+                }
+            } else {
+                // 免費用戶 -> 顯示訂閱
+                if (subBtn) {
+                    subBtn.style.display = 'flex';
+                    subBtn.classList.remove('hidden');
+                }
+                if (cancelSubBtn) cancelSubBtn.style.display = 'none';
+            }
+        }
+
+        // ==========================================
+        // 重要：自動觸發器 (Auto-Trigger)
+        // ==========================================
+        
+        // 監聽 Supabase 登入/登出事件 (最關鍵的一步)
+        // 確保這段代碼執行時 supabaseClient 已經存在
+        if (typeof window.supabaseClient !== 'undefined') {
+            window.supabaseClient.auth.onAuthStateChange((event, session) => {
+                console.log("🔄 狀態改變:", event);
+                updateLoginButton(); // 狀態一變，立刻刷新按鈕
+            });
+        }
+
+        // Show success message
+        function showSuccessMessage(message) {
+            const successDiv = document.getElementById('auth-success-message');
+            if (successDiv) {
+                successDiv.textContent = message;
+                successDiv.style.display = 'block';
+                setTimeout(() => {
+                    successDiv.style.display = 'none';
+                }, 3000);
+            }
+        }
+
+        // ===== PAGE INITIALIZATION (runs after DOM loads) =====
+        document.addEventListener('DOMContentLoaded', async function() {
+            // Particles effect
+            const particlesContainer = document.getElementById('particles');
+            if (particlesContainer) {
+                for (let i = 0; i < 30; i++) {
+                    const particle = document.createElement('div');
+                    particle.className = 'particle';
+                    particle.style.left = Math.random() * 100 + '%';
+                    particle.style.top = Math.random() * 100 + '%';
+                    particle.style.animationDelay = Math.random() * 6 + 's';
+                    particlesContainer.appendChild(particle);
+                }
+            }
+
+            // Dropdown menu functionality
+            const dropdownBtn = document.getElementById('tools-dropdown-btn');
+            const dropdownMenu = document.getElementById('tools-dropdown-menu');
+            const dropdownArrow = document.getElementById('dropdown-arrow');
+
+            if (dropdownBtn && dropdownMenu) {
+                dropdownBtn.addEventListener('click', function(e) {
+                    e.stopPropagation();
+                    dropdownMenu.classList.toggle('hidden');
+                    dropdownArrow.classList.toggle('rotate-180');
+                });
+
+                document.addEventListener('click', function(e) {
+                    if (!dropdownBtn.contains(e.target) && !dropdownMenu.contains(e.target)) {
+                        dropdownMenu.classList.add('hidden');
+                        dropdownArrow.classList.remove('rotate-180');
+                    }
+                });
+            }
+
+            // Check auth state and update UI
+            await updateLoginButton();
+
+            // Sign In form handler
+            const signinForm = document.getElementById('signin-form');
+            if (signinForm) {
+                signinForm.addEventListener('submit', async function(e) {
+                    e.preventDefault();
+                    await handleSignIn();
+                });
+            }
+
+            // Sign Up form handler
+            const signupForm = document.getElementById('signup-form');
+            if (signupForm) {
+                signupForm.addEventListener('submit', async function(e) {
+                    e.preventDefault();
+                    await handleSignUp();
+                });
+            }
+
+            // Close modal when clicking outside
+            document.addEventListener('click', function(e) {
+                const modal = document.getElementById('login-modal');
+                if (e.target === modal) {
+                    closeLoginModal();
+                }
+            });
+        });
+    </script>
+
+    <script src="hkex-southbound.js?v=2.0"></script>
+    <script src="main.js?v=1.0"></script>
+</body>
+</html>
