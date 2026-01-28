@@ -12,6 +12,7 @@ import numpy as np
 from datetime import datetime, timedelta
 import matplotlib.pyplot as plt
 from matplotlib.patches import Rectangle
+import pytz
 
 # Check if mplfinance is available
 try:
@@ -271,7 +272,9 @@ def generate_chart(symbol: str, market: str = 'HK', period: str = '13mo',
     
     # Format symbol for Yahoo Finance
     if market.upper() == 'HK':
-        yf_symbol = f"{symbol.zfill(4)}.HK"
+        # Remove .HK if already present to avoid duplication
+        clean_symbol = symbol.replace('.HK', '')
+        yf_symbol = f"{clean_symbol.zfill(4)}.HK"
     else:
         yf_symbol = symbol
     
@@ -280,7 +283,13 @@ def generate_chart(symbol: str, market: str = 'HK', period: str = '13mo',
     # Fetch 2 years of data for EMA200 calculation, but display only 6 months
     try:
         # Always fetch 2 years for accurate EMA200
-        end_date = datetime.now()
+        # Use market timezone to get correct date
+        if market.upper() == 'HK':
+            hk_tz = pytz.timezone('Asia/Hong_Kong')
+            end_date = datetime.now(hk_tz).replace(tzinfo=None)  # Convert to naive datetime for yfinance
+        else:
+            end_date = datetime.now()
+        
         start_date = end_date - timedelta(days=730)  # 2 years
         full_data = yf.download(yf_symbol, start=start_date, end=end_date, interval='1d', progress=False)
         if full_data.empty:
