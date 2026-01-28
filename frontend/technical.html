@@ -464,10 +464,28 @@
 
                 <!-- Results -->
                 <div id="resultSection" class="result-section">
-                    <!-- Technical Chart - Click to enlarge -->
+                    <!-- Technical Chart - Interactive + Static with toggle -->
                     <div class="chart-container mb-4">
-                        <h6><i class="bi bi-bar-chart-fill me-2"></i>技術圖表 (6M) <small class="text-muted" style="font-size: 0.7rem;">點擊放大</small></h6>
-                        <img id="technicalChart" src="" alt="Technical Chart" onclick="enlargeChart(this)" style="width: 100%; max-height: 380px; object-fit: contain; cursor: zoom-in;">
+                        <div class="d-flex justify-content-between align-items-center mb-2">
+                            <h6 class="mb-0"><i class="bi bi-bar-chart-fill me-2"></i>技術圖表 (6M)</h6>
+                            <div class="btn-group btn-group-sm" role="group">
+                                <button type="button" class="btn btn-outline-info active" id="btnInteractive" onclick="switchChartMode('interactive')">
+                                    <i class="bi bi-hand-index-thumb"></i> 互動
+                                </button>
+                                <button type="button" class="btn btn-outline-info" id="btnStatic" onclick="switchChartMode('static')">
+                                    <i class="bi bi-image"></i> 靜態
+                                </button>
+                            </div>
+                        </div>
+                        <!-- Interactive Chart (iframe) - Default -->
+                        <div id="interactiveChartContainer" style="display: block;">
+                            <iframe id="interactiveChart" src="" style="width: 100%; height: 500px; border: none; border-radius: 8px; background: #fff;"></iframe>
+                        </div>
+                        <!-- Static Chart (img) - Fallback -->
+                        <div id="staticChartContainer" style="display: none;">
+                            <img id="technicalChart" src="" alt="Technical Chart" onclick="enlargeChart(this)" style="width: 100%; max-height: 450px; object-fit: contain; cursor: zoom-in;">
+                            <small class="text-muted" style="font-size: 0.7rem;">點擊放大</small>
+                        </div>
                     </div>
 
                     <!-- RRG + Report Row -->
@@ -717,6 +735,9 @@
             }
         }
 
+        // Store chart URLs globally for toggle
+        let currentCharts = { interactive: null, technical: null };
+        
         function displayResults(data) {
             // Show result section
             document.getElementById('resultSection').style.display = 'block';
@@ -724,12 +745,26 @@
             // Display report
             document.getElementById('reportContent').textContent = data.report || '無報告數據';
 
-            // Display charts
-            if (data.charts.technical) {
-                document.getElementById('technicalChart').src = TA_API_BASE + data.charts.technical;
-                document.getElementById('technicalChart').style.display = 'block';
-            } else {
-                document.getElementById('technicalChart').style.display = 'none';
+            // Store chart URLs
+            currentCharts.technical = data.charts.technical ? TA_API_BASE + data.charts.technical : null;
+            currentCharts.interactive = data.charts.interactive ? TA_API_BASE + data.charts.interactive : null;
+
+            // Display charts - prefer interactive, fallback to static
+            if (currentCharts.interactive) {
+                document.getElementById('interactiveChart').src = currentCharts.interactive;
+                document.getElementById('interactiveChart').onerror = function() {
+                    // Fallback to static if interactive fails
+                    console.log('Interactive chart failed, falling back to static');
+                    switchChartMode('static');
+                };
+                switchChartMode('interactive');
+            } else if (currentCharts.technical) {
+                // No interactive available, use static
+                switchChartMode('static');
+            }
+            
+            if (currentCharts.technical) {
+                document.getElementById('technicalChart').src = currentCharts.technical;
             }
 
             if (data.charts.rrg) {
@@ -827,6 +862,35 @@
 
         function closeModal() {
             document.getElementById('chartModal').style.display = 'none';
+        }
+
+        function switchChartMode(mode) {
+            const interactiveContainer = document.getElementById('interactiveChartContainer');
+            const staticContainer = document.getElementById('staticChartContainer');
+            const btnInteractive = document.getElementById('btnInteractive');
+            const btnStatic = document.getElementById('btnStatic');
+            
+            if (mode === 'interactive' && currentCharts.interactive) {
+                interactiveContainer.style.display = 'block';
+                staticContainer.style.display = 'none';
+                btnInteractive.classList.add('active');
+                btnStatic.classList.remove('active');
+            } else {
+                // Static mode or fallback
+                interactiveContainer.style.display = 'none';
+                staticContainer.style.display = 'block';
+                btnInteractive.classList.remove('active');
+                btnStatic.classList.add('active');
+                
+                // If no interactive available, disable the button
+                if (!currentCharts.interactive) {
+                    btnInteractive.disabled = true;
+                    btnInteractive.title = '互動圖表暫不可用';
+                } else {
+                    btnInteractive.disabled = false;
+                    btnInteractive.title = '';
+                }
+            }
         }
 
         // Close modal on Escape key
