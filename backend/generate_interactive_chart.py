@@ -255,33 +255,41 @@ def generate_interactive_chart(symbol: str, market: str = 'HK',
             text=f"{title_text}<br><sup>{subtitle}</sup>",
             x=0.5,
             xanchor='center',
-            font=dict(size=16)
+            font=dict(size=14)
         ),
         xaxis_rangeslider_visible=False,
         xaxis2_rangeslider_visible=False,
         template='plotly_white',
-        height=700,
-        width=1200,
+        height=480,  # Optimized height - no scrolling needed
         legend=dict(
             yanchor="top",
             y=0.99,
             xanchor="left",
             x=0.01,
-            bgcolor="rgba(255,255,255,0.8)"
+            bgcolor="rgba(255,255,255,0.8)",
+            font=dict(size=10)
         ),
         hovermode='x unified',
-        margin=dict(l=60, r=120, t=80, b=40),
+        margin=dict(l=50, r=100, t=60, b=30),
     )
     
     # Y-axis labels
     fig.update_yaxes(title_text="Price", row=1, col=1)
-    fig.update_yaxes(title_text="Volume", row=2, col=1)
+    fig.update_yaxes(title_text="Vol", row=2, col=1)
     
-    # Hide weekend gaps
+    # Hide non-trading days (weekends + find gaps in data for holidays)
+    # Get all dates and find missing trading days
+    all_dates = pd.date_range(start=data['Date'].min(), end=data['Date'].max(), freq='D')
+    trading_dates = set(data['Date'].dt.date)
+    missing_dates = [d for d in all_dates if d.date() not in trading_dates]
+    
+    # Convert to date values for rangebreaks
+    date_breaks = [dict(values=[d]) for d in missing_dates]
+    
     fig.update_xaxes(
         rangebreaks=[
             dict(bounds=["sat", "mon"]),  # Hide weekends
-        ]
+        ] + date_breaks  # Hide holidays/missing dates
     )
     
     # Output file
