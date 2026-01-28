@@ -19,6 +19,7 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from ta_analyzer import MarketAnalyzer, NumpyEncoder
 from rrg_rs_analyzer import generate_rrg_chart, get_rs_ranking, get_rrg_quadrant_zh
 from generate_chart import generate_chart
+from generate_interactive_chart import generate_interactive_chart
 
 app = Flask(__name__)
 app.json.encoder = NumpyEncoder
@@ -82,6 +83,7 @@ def analyze():
         'report': '',
         'charts': {
             'technical': None,
+            'interactive': None,
             'rrg': None
         },
         'data': None,
@@ -112,17 +114,24 @@ def analyze():
             'candlestick': analysis.get('candlestick')
         }
         
-        # 3. Generate technical chart
+        # 3. Generate technical chart (static PNG)
         try:
-            # Ensure output directory exists
             os.makedirs(CHART_DIR, exist_ok=True)
             chart_path = generate_chart(ticker, market, period='13mo', output_dir=CHART_DIR)
             if chart_path and os.path.exists(chart_path):
-                # Return relative path for API access
                 chart_filename = os.path.basename(chart_path)
                 result['charts']['technical'] = f'/api/ta/chart/{chart_filename}'
         except Exception as e:
             result['charts']['technical_error'] = str(e)
+        
+        # 3b. Generate interactive chart (Plotly HTML with CDN)
+        try:
+            interactive_path = generate_interactive_chart(ticker, market, output_dir=CHART_DIR, use_cdn=True)
+            if interactive_path and os.path.exists(interactive_path):
+                interactive_filename = os.path.basename(interactive_path)
+                result['charts']['interactive'] = f'/api/ta/chart/{interactive_filename}'
+        except Exception as e:
+            result['charts']['interactive_error'] = str(e)
         
         # 4. Generate RRG chart
         try:
@@ -173,11 +182,73 @@ def analyze():
 
 @app.route('/api/ta/chart/<filename>')
 def serve_chart(filename):
-    """Serve chart images"""
+    """Serve chart images (PNG or HTML)"""
     chart_path = os.path.join(CHART_DIR, filename)
     if os.path.exists(chart_path):
+        if filename.endswith('.html'):
+            return send_file(chart_path, mimetype='text/html')
         return send_file(chart_path, mimetype='image/png')
     return jsonify({'error': 'Chart not found'}), 404
+
+
+@app.route('/api/ta/interactive', methods=['GET', 'POST'])
+def interactive_chart_endpoint():
+    """
+    Generate interactive Plotly chart (CDN version ~40KB)
+    
+    GET: /api/ta/interactive?ticker=0700&market=HK
+    POST: {"ticker": "0700", "market": "HK"}
+    
+    Returns:
+        - Interactive chart URL
+        - File size info
+    """
+    if request.method == 'POST':
+        data = request.json or {}
+    else:
+        data = request.args.to_dict()
+    
+    ticker = data.get('ticker', '').upper().strip()
+    market = data.get('market', 'HK').upper().strip()
+    
+    if not ticker:
+        return jsonify({'success': False, 'error': 'ticker is required'}), 400
+    
+    if market not in ['HK', 'US']:
+        return jsonify({'success': False, 'error': 'market must be HK or US'}), 400
+    
+    try:
+        os.makedirs(CHART_DIR, exist_ok=True)
+        chart_path = generate_interactive_chart(ticker, market, output_dir=CHART_DIR, use_cdn=True)
+        
+        if chart_path and os.path.exists(chart_path):
+            chart_filename = os.path.basename(chart_path)
+            file_size = os.path.getsize(chart_path)
+            
+            return jsonify({
+                'success': True,
+                'ticker': ticker,
+                'market': market,
+                'chart_url': f'/api/ta/chart/{chart_filename}',
+                'file_size_kb': round(file_size / 1024, 1),
+                'type': 'interactive',
+                'timestamp': datetime.now().isoformat()
+            })
+        else:
+            return jsonify({
+                'success': False,
+                'error': 'Failed to generate chart',
+                'ticker': ticker,
+                'market': market
+            }), 500
+            
+    except Exception as e:
+        return jsonify({
+            'success': False,
+            'error': str(e),
+            'ticker': ticker,
+            'market': market
+        }), 500
 
 
 @app.route('/api/ta/quick', methods=['GET'])
@@ -258,7 +329,7 @@ if __name__ == '__main__':
     import argparse
     
     parser = argparse.ArgumentParser(description='Technical Analysis API')
-    parser.add_argument('--port', '-p', type=int, default=5004, help='Port to run on')
+    parser.add_argument('--port', '-p', type=int, default=5003, help='Port to run on')
     parser.add_argument('--host', '-H', default='0.0.0.0', help='Host to bind to')
     parser.add_argument('--debug', '-d', action='store_true', help='Debug mode')
     
