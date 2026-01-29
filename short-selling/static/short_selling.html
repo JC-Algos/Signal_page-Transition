@@ -104,9 +104,9 @@
 
             <!-- Results -->
             <div id="lookupResults" class="hidden">
-                <div class="grid md:grid-cols-3 gap-4 mb-6">
-                    <!-- Aggregate Position -->
-                    <div class="bg-gradient-to-br from-blue-50 to-blue-100 rounded-xl p-5">
+                <div class="grid md:grid-cols-5 gap-4 mb-6">
+                    <!-- Aggregate Position - 1.5 cols -->
+                    <div class="md:col-span-1 bg-gradient-to-br from-blue-50 to-blue-100 rounded-xl p-4">
                         <div class="flex items-center justify-between mb-3">
                             <h3 class="font-semibold text-blue-800">📊 累計沽空倉位</h3>
                             <span id="aggregateDate" class="text-sm text-blue-600"></span>
@@ -116,8 +116,8 @@
                         </div>
                     </div>
                     
-                    <!-- Daily Short -->
-                    <div class="bg-gradient-to-br from-amber-50 to-amber-100 rounded-xl p-5">
+                    <!-- Daily Short - 1.5 cols -->
+                    <div class="md:col-span-1 bg-gradient-to-br from-amber-50 to-amber-100 rounded-xl p-4">
                         <div class="flex items-center justify-between mb-3">
                             <h3 class="font-semibold text-amber-800">📉 今日沽空成交</h3>
                             <span id="dailyDate" class="text-sm text-amber-600"></span>
@@ -127,8 +127,8 @@
                         </div>
                     </div>
                     
-                    <!-- Historical Chart (13 weeks) -->
-                    <div class="bg-gradient-to-br from-purple-50 to-purple-100 rounded-xl p-5">
+                    <!-- Historical Chart (13 weeks) - 3 cols -->
+                    <div class="md:col-span-3 bg-gradient-to-br from-purple-50 to-purple-100 rounded-xl p-4">
                         <div class="flex items-center justify-between mb-3">
                             <h3 class="font-semibold text-purple-800">📈 13週趨勢</h3>
                             <span class="text-sm text-purple-600">SFC</span>
