@@ -129,7 +129,7 @@
                     
                     <!-- Historical Chart (14 weeks) - 3 cols -->
                     <div class="md:col-span-3 bg-gradient-to-br from-purple-50 to-purple-100 rounded-xl p-4">
-                        <div id="stockChart" style="height: 200px;"></div>
+                        <div id="stockChart" style="height: 220px;"></div>
                     </div>
                 </div>
             </div>
@@ -359,21 +359,21 @@
             const layout = {
                 title: {
                     text: '累計沽空倉位',
-                    font: { size: 14, color: '#6b21a8', family: 'Noto Sans TC, sans-serif' },
+                    font: { size: 14, color: '#6b21a8', family: 'Noto Sans TC, sans-serif', weight: 'bold' },
                     x: 0.5,
                     xanchor: 'center',
-                    y: 0.95
+                    y: 0.98,
+                    yanchor: 'top'
                 },
                 showlegend: false,
-                margin: { t: 35, r: 15, b: 50, l: 50 },
+                margin: { t: 40, r: 15, b: 70, l: 50 },
                 xaxis: { 
                     tickangle: -45,
-                    tickfont: { size: 10 },
-                    tickformat: '%Y-%m-%d',
+                    tickfont: { size: 9 },
                     showgrid: false,
-                    dtick: 'M1',  // Show tick every month
-                    tickmode: 'auto',
-                    nticks: 8
+                    tickmode: 'array',
+                    tickvals: dates,
+                    ticktext: dates.map(d => d.slice(5))  // Show MM-DD format
                 },
                 yaxis: { 
                     title: { text: '% 流通股', font: { size: 10 } },
