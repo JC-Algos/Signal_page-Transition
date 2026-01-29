@@ -1,0 +1,451 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>JC Algos 沽空報告</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.plot.ly/plotly-2.27.0.min.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Noto Sans TC', sans-serif;
+        }
+        .gradient-header {
+            background: linear-gradient(135deg, #1e3a5f 0%, #2d5a87 50%, #1e3a5f 100%);
+        }
+        .card {
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+        }
+        .stock-row:hover {
+            background-color: #f8fafc;
+        }
+        .rank-badge {
+            width: 28px;
+            height: 28px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 600;
+            font-size: 12px;
+        }
+        .rank-1 { background: linear-gradient(135deg, #ffd700, #ffec8b); color: #8b6914; }
+        .rank-2 { background: linear-gradient(135deg, #c0c0c0, #e8e8e8); color: #666; }
+        .rank-3 { background: linear-gradient(135deg, #cd7f32, #daa06d); color: #5c3317; }
+        .rank-other { background: #f1f5f9; color: #64748b; }
+        
+        .loading {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid #f3f3f3;
+            border-top: 3px solid #3498db;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        .pct-badge {
+            padding: 2px 8px;
+            border-radius: 12px;
+            font-size: 13px;
+            font-weight: 600;
+        }
+        .pct-high { background: #fee2e2; color: #dc2626; }
+        .pct-medium { background: #fef3c7; color: #d97706; }
+        .pct-low { background: #d1fae5; color: #059669; }
+    </style>
+</head>
+<body class="bg-gray-50 min-h-screen">
+    <!-- Header -->
+    <header class="gradient-header text-white py-6 shadow-lg">
+        <div class="container mx-auto px-4">
+            <div class="flex items-center justify-between">
+                <div>
+                    <h1 class="text-3xl font-bold">JC Algos 沽空報告</h1>
+                    <p class="text-blue-200 mt-1">港股沽空數據分析工具</p>
+                </div>
+                <div class="text-right">
+                    <div class="text-sm text-blue-200">數據來源</div>
+                    <div class="text-sm">SFC 證監會 · HKEX 港交所</div>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <main class="container mx-auto px-4 py-8">
+        <!-- Part 1: Stock Lookup -->
+        <section class="card p-6 mb-8">
+            <h2 class="text-xl font-bold text-gray-800 mb-4 flex items-center">
+                <span class="w-8 h-8 bg-blue-500 text-white rounded-lg flex items-center justify-center mr-3 text-sm">1</span>
+                個股沽空查詢
+            </h2>
+            
+            <div class="flex flex-col md:flex-row gap-4 mb-6">
+                <div class="flex-1">
+                    <div class="relative">
+                        <input type="text" id="tickerInput" 
+                               placeholder="輸入股票代碼 (例如: 700, 9988, 2318)"
+                               class="w-full px-4 py-3 border-2 border-gray-200 rounded-lg focus:border-blue-500 focus:outline-none text-lg"
+                               onkeypress="if(event.key==='Enter')lookupStock()">
+                        <button onclick="lookupStock()" 
+                                class="absolute right-2 top-1/2 -translate-y-1/2 bg-blue-500 hover:bg-blue-600 text-white px-6 py-2 rounded-lg transition">
+                            查詢
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Results -->
+            <div id="lookupResults" class="hidden">
+                <div class="grid md:grid-cols-2 gap-6 mb-6">
+                    <!-- Aggregate Position -->
+                    <div class="bg-gradient-to-br from-blue-50 to-blue-100 rounded-xl p-5">
+                        <div class="flex items-center justify-between mb-3">
+                            <h3 class="font-semibold text-blue-800">📊 累計沽空倉位 (SFC)</h3>
+                            <span id="aggregateDate" class="text-sm text-blue-600"></span>
+                        </div>
+                        <div id="aggregateData" class="space-y-2">
+                            <!-- Filled by JS -->
+                        </div>
+                    </div>
+                    
+                    <!-- Daily Short -->
+                    <div class="bg-gradient-to-br from-amber-50 to-amber-100 rounded-xl p-5">
+                        <div class="flex items-center justify-between mb-3">
+                            <h3 class="font-semibold text-amber-800">📉 今日沽空成交 (HKEX)</h3>
+                            <span id="dailyDate" class="text-sm text-amber-600"></span>
+                        </div>
+                        <div id="dailyData" class="space-y-2">
+                            <!-- Filled by JS -->
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Chart -->
+                <div class="bg-white rounded-xl border border-gray-200 p-4">
+                    <h3 class="font-semibold text-gray-800 mb-4">📈 歷史沽空數據</h3>
+                    <div id="stockChart" style="height: 400px;"></div>
+                </div>
+            </div>
+            
+            <div id="lookupLoading" class="hidden text-center py-8">
+                <div class="loading"></div>
+                <p class="text-gray-500 mt-2">正在查詢數據...</p>
+            </div>
+            
+            <div id="lookupError" class="hidden bg-red-50 text-red-600 p-4 rounded-lg">
+            </div>
+        </section>
+
+        <!-- Part 2: Top 20 Lists -->
+        <section class="card p-6">
+            <h2 class="text-xl font-bold text-gray-800 mb-4 flex items-center">
+                <span class="w-8 h-8 bg-blue-500 text-white rounded-lg flex items-center justify-center mr-3 text-sm">2</span>
+                沽空排行榜 Top 20
+                <button onclick="loadTop20()" class="ml-auto text-sm bg-gray-100 hover:bg-gray-200 px-4 py-2 rounded-lg transition">
+                    🔄 刷新
+                </button>
+            </h2>
+            
+            <div id="top20Loading" class="text-center py-8">
+                <div class="loading"></div>
+                <p class="text-gray-500 mt-2">正在載入排行榜...</p>
+            </div>
+            
+            <div id="top20Content" class="hidden">
+                <div class="grid md:grid-cols-2 gap-6">
+                    <!-- Daily Top 20 -->
+                    <div>
+                        <div class="flex items-center justify-between mb-4">
+                            <h3 class="font-semibold text-amber-700">📉 今日沽空成交 Top 20</h3>
+                            <span id="dailyTop20Date" class="text-sm text-gray-500"></span>
+                        </div>
+                        <div class="text-xs text-gray-500 mb-2 px-2">按 %流通股 排名</div>
+                        <div id="dailyTop20List" class="space-y-1">
+                            <!-- Filled by JS -->
+                        </div>
+                    </div>
+                    
+                    <!-- Aggregate Top 20 -->
+                    <div>
+                        <div class="flex items-center justify-between mb-4">
+                            <h3 class="font-semibold text-blue-700">📊 累計沽空倉位 Top 20</h3>
+                            <span id="aggregateTop20Date" class="text-sm text-gray-500"></span>
+                        </div>
+                        <div class="text-xs text-gray-500 mb-2 px-2">按 %流通股 排名</div>
+                        <div id="aggregateTop20List" class="space-y-1">
+                            <!-- Filled by JS -->
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <!-- Footer -->
+    <footer class="bg-gray-800 text-gray-400 py-6 mt-12">
+        <div class="container mx-auto px-4 text-center">
+            <p>© 2026 JC Algos. 數據僅供參考，不構成投資建議。</p>
+            <p class="text-sm mt-2">累計數據來源: SFC 證監會 | 每日數據來源: HKEX 港交所</p>
+        </div>
+    </footer>
+
+    <script>
+        // Format number with commas
+        function formatNumber(num) {
+            if (num >= 1e9) return (num / 1e9).toFixed(2) + 'B';
+            if (num >= 1e6) return (num / 1e6).toFixed(1) + 'M';
+            if (num >= 1e3) return (num / 1e3).toFixed(1) + 'K';
+            return num.toLocaleString();
+        }
+        
+        // Get percentage badge class
+        function getPctClass(pct, isDaily = false) {
+            if (isDaily) {
+                if (pct >= 0.5) return 'pct-high';
+                if (pct >= 0.2) return 'pct-medium';
+                return 'pct-low';
+            } else {
+                if (pct >= 15) return 'pct-high';
+                if (pct >= 8) return 'pct-medium';
+                return 'pct-low';
+            }
+        }
+        
+        // Lookup stock
+        async function lookupStock() {
+            const ticker = document.getElementById('tickerInput').value.trim();
+            if (!ticker) return;
+            
+            document.getElementById('lookupResults').classList.add('hidden');
+            document.getElementById('lookupError').classList.add('hidden');
+            document.getElementById('lookupLoading').classList.remove('hidden');
+            
+            try {
+                const response = await fetch(`/api/short/lookup?ticker=${ticker}`);
+                const data = await response.json();
+                
+                if (data.error) {
+                    throw new Error(data.error);
+                }
+                
+                displayLookupResults(data);
+            } catch (error) {
+                document.getElementById('lookupError').textContent = '查詢失敗: ' + error.message;
+                document.getElementById('lookupError').classList.remove('hidden');
+            } finally {
+                document.getElementById('lookupLoading').classList.add('hidden');
+            }
+        }
+        
+        // Display lookup results
+        function displayLookupResults(data) {
+            const resultsEl = document.getElementById('lookupResults');
+            
+            // Stock name header
+            const stockName = data.chinese_name || data.stock_code;
+            
+            // Aggregate data
+            const aggEl = document.getElementById('aggregateData');
+            if (data.aggregate && data.aggregate.found) {
+                const agg = data.aggregate;
+                document.getElementById('aggregateDate').textContent = agg.report_date || '';
+                aggEl.innerHTML = `
+                    <div class="text-2xl font-bold text-blue-900">${stockName}</div>
+                    <div class="text-sm text-blue-700">${data.stock_code}.HK</div>
+                    <div class="mt-3 grid grid-cols-2 gap-4">
+                        <div>
+                            <div class="text-xs text-blue-600">沽空股數</div>
+                            <div class="font-semibold">${formatNumber(agg.short_shares)}</div>
+                        </div>
+                        <div>
+                            <div class="text-xs text-blue-600">沽空金額</div>
+                            <div class="font-semibold">$${formatNumber(agg.short_value_hkd || 0)}</div>
+                        </div>
+                    </div>
+                    <div class="mt-3">
+                        <div class="text-xs text-blue-600">佔流通股</div>
+                        <div class="text-xl font-bold ${data.aggregate.pct_of_float >= 10 ? 'text-red-600' : 'text-blue-900'}">
+                            ${data.aggregate.pct_of_float ? data.aggregate.pct_of_float.toFixed(2) + '%' : 'N/A'}
+                        </div>
+                    </div>
+                `;
+            } else {
+                aggEl.innerHTML = `
+                    <div class="text-2xl font-bold text-blue-900">${stockName}</div>
+                    <div class="text-sm text-blue-700">${data.stock_code}.HK</div>
+                    <div class="mt-4 text-blue-600">NIL - 未有申報沽空倉位</div>
+                `;
+            }
+            
+            // Daily data
+            const dailyEl = document.getElementById('dailyData');
+            if (data.daily && data.daily.found) {
+                const daily = data.daily;
+                document.getElementById('dailyDate').textContent = daily.trading_date || '';
+                dailyEl.innerHTML = `
+                    <div class="text-2xl font-bold text-amber-900">${stockName}</div>
+                    <div class="text-sm text-amber-700">${data.stock_code}.HK</div>
+                    <div class="mt-3 grid grid-cols-2 gap-4">
+                        <div>
+                            <div class="text-xs text-amber-600">沽空股數</div>
+                            <div class="font-semibold">${formatNumber(daily.short_shares)}</div>
+                        </div>
+                        <div>
+                            <div class="text-xs text-amber-600">沽空金額</div>
+                            <div class="font-semibold">$${formatNumber(daily.short_value)}</div>
+                        </div>
+                    </div>
+                    <div class="mt-3">
+                        <div class="text-xs text-amber-600">佔流通股</div>
+                        <div class="text-xl font-bold text-amber-900">
+                            ${data.daily.pct_of_float ? data.daily.pct_of_float.toFixed(4) + '%' : 'N/A'}
+                        </div>
+                    </div>
+                `;
+            } else {
+                dailyEl.innerHTML = `
+                    <div class="text-2xl font-bold text-amber-900">${stockName}</div>
+                    <div class="text-sm text-amber-700">${data.stock_code}.HK</div>
+                    <div class="mt-4 text-amber-600">NIL - 今日未有沽空記錄</div>
+                `;
+            }
+            
+            // Chart
+            drawStockChart(data);
+            
+            resultsEl.classList.remove('hidden');
+        }
+        
+        // Draw stock chart
+        function drawStockChart(data) {
+            const historicalAgg = data.historical_aggregate || [];
+            const historicalDaily = data.historical_daily || [];
+            
+            // Aggregate line (right y-axis)
+            const aggTrace = {
+                x: historicalAgg.map(d => d.date),
+                y: historicalAgg.map(d => d.short_value / 1e9),
+                text: historicalAgg.map(d => d.pct_of_float ? `${d.pct_of_float}%` : ''),
+                name: '累計沽空倉位 (十億)',
+                type: 'scatter',
+                mode: 'lines+markers+text',
+                textposition: 'top center',
+                line: { color: '#3b82f6', width: 3 },
+                marker: { size: 8 },
+                yaxis: 'y2'
+            };
+            
+            // Daily bars (left y-axis)
+            const dailyTrace = {
+                x: historicalDaily.map(d => d.date),
+                y: historicalDaily.map(d => d.short_value / 1e6),
+                text: historicalDaily.map(d => d.pct_of_float ? `${d.pct_of_float}%` : ''),
+                name: '每日沽空成交 (百萬)',
+                type: 'bar',
+                textposition: 'outside',
+                marker: { color: '#f59e0b' }
+            };
+            
+            const layout = {
+                showlegend: true,
+                legend: { orientation: 'h', y: 1.1 },
+                margin: { t: 40, r: 60, b: 60, l: 60 },
+                xaxis: { 
+                    title: '日期',
+                    tickangle: -45
+                },
+                yaxis: { 
+                    title: '每日沽空 (百萬 HKD)',
+                    side: 'left',
+                    showgrid: true,
+                    gridcolor: '#f1f5f9'
+                },
+                yaxis2: {
+                    title: '累計倉位 (十億 HKD)',
+                    side: 'right',
+                    overlaying: 'y',
+                    showgrid: false
+                },
+                paper_bgcolor: 'transparent',
+                plot_bgcolor: 'transparent',
+                font: { family: 'Noto Sans TC, sans-serif' }
+            };
+            
+            const config = { responsive: true, displayModeBar: false };
+            
+            Plotly.newPlot('stockChart', [dailyTrace, aggTrace], layout, config);
+        }
+        
+        // Load Top 20
+        async function loadTop20() {
+            document.getElementById('top20Loading').classList.remove('hidden');
+            document.getElementById('top20Content').classList.add('hidden');
+            
+            try {
+                const response = await fetch('/api/short/top20');
+                const data = await response.json();
+                
+                if (data.error) {
+                    throw new Error(data.error);
+                }
+                
+                displayTop20(data);
+            } catch (error) {
+                console.error('Failed to load top 20:', error);
+            } finally {
+                document.getElementById('top20Loading').classList.add('hidden');
+            }
+        }
+        
+        // Display Top 20
+        function displayTop20(data) {
+            // Daily Top 20
+            document.getElementById('dailyTop20Date').textContent = data.daily.trading_date;
+            const dailyListEl = document.getElementById('dailyTop20List');
+            dailyListEl.innerHTML = data.daily.stocks.map((stock, i) => `
+                <div class="stock-row flex items-center py-2 px-2 rounded-lg cursor-pointer" onclick="document.getElementById('tickerInput').value='${stock.stock_code}';lookupStock();">
+                    <div class="rank-badge ${i < 3 ? 'rank-' + (i+1) : 'rank-other'} mr-3">${i + 1}</div>
+                    <div class="flex-1 min-w-0">
+                        <div class="font-medium text-gray-900 truncate">${stock.chinese_name || stock.stock_name}</div>
+                        <div class="text-xs text-gray-500">${stock.stock_code}.HK</div>
+                    </div>
+                    <div class="text-right ml-2">
+                        <div class="pct-badge ${getPctClass(stock.pct_of_float, true)}">${stock.pct_of_float.toFixed(2)}%</div>
+                        <div class="text-xs text-gray-500 mt-1">$${formatNumber(stock.short_value)}</div>
+                    </div>
+                </div>
+            `).join('');
+            
+            // Aggregate Top 20
+            document.getElementById('aggregateTop20Date').textContent = data.aggregate.report_date;
+            const aggListEl = document.getElementById('aggregateTop20List');
+            aggListEl.innerHTML = data.aggregate.stocks.map((stock, i) => `
+                <div class="stock-row flex items-center py-2 px-2 rounded-lg cursor-pointer" onclick="document.getElementById('tickerInput').value='${stock.stock_code}';lookupStock();">
+                    <div class="rank-badge ${i < 3 ? 'rank-' + (i+1) : 'rank-other'} mr-3">${i + 1}</div>
+                    <div class="flex-1 min-w-0">
+                        <div class="font-medium text-gray-900 truncate">${stock.chinese_name || stock.stock_name}</div>
+                        <div class="text-xs text-gray-500">${stock.stock_code}.HK</div>
+                    </div>
+                    <div class="text-right ml-2">
+                        <div class="pct-badge ${getPctClass(stock.short_pct_of_float, false)}">${stock.short_pct_of_float.toFixed(1)}%</div>
+                        <div class="text-xs text-gray-500 mt-1">$${formatNumber(stock.short_value_hkd)}</div>
+                    </div>
+                </div>
+            `).join('');
+            
+            document.getElementById('top20Content').classList.remove('hidden');
+        }
+        
+        // Load Top 20 on page load
+        document.addEventListener('DOMContentLoaded', loadTop20);
+    </script>
+</body>
+</html>
