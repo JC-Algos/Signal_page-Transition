@@ -219,6 +219,11 @@
             }
         }
         
+        // API Base URL - change this for deployment
+        const API_BASE = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1' 
+            ? '' 
+            : 'https://short.srv1295571.hstgr.cloud';
+        
         // Lookup stock
         async function lookupStock() {
             const ticker = document.getElementById('tickerInput').value.trim();
@@ -229,7 +234,7 @@
             document.getElementById('lookupLoading').classList.remove('hidden');
             
             try {
-                const response = await fetch(`/api/short/lookup?ticker=${ticker}`);
+                const response = await fetch(`${API_BASE}/api/short/lookup?ticker=${ticker}`);
                 const data = await response.json();
                 
                 if (data.error) {
@@ -390,7 +395,7 @@
             document.getElementById('top20Content').classList.add('hidden');
             
             try {
-                const response = await fetch('/api/short/top20');
+                const response = await fetch(`${API_BASE}/api/short/top20`);
                 const data = await response.json();
                 
                 if (data.error) {
