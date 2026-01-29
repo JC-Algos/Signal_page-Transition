@@ -129,7 +129,8 @@
                     
                     <!-- Historical Chart (14 weeks) - 3 cols -->
                     <div class="md:col-span-3 bg-gradient-to-br from-purple-50 to-purple-100 rounded-xl p-4">
-                        <div id="stockChart" style="height: 220px;"></div>
+                        <div class="text-center font-semibold text-purple-800 mb-1">📈 累計沽空倉位走勢</div>
+                        <div id="stockChart" style="height: 200px;"></div>
                     </div>
                 </div>
             </div>
@@ -357,16 +358,8 @@
             };
             
             const layout = {
-                title: {
-                    text: '累計沽空倉位',
-                    font: { size: 14, color: '#6b21a8', family: 'Noto Sans TC, sans-serif', weight: 'bold' },
-                    x: 0.5,
-                    xanchor: 'center',
-                    y: 0.98,
-                    yanchor: 'top'
-                },
                 showlegend: false,
-                margin: { t: 40, r: 15, b: 70, l: 50 },
+                margin: { t: 10, r: 15, b: 70, l: 50 },
                 xaxis: { 
                     tickangle: -45,
                     tickfont: { size: 9 },
