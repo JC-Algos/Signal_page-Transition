@@ -4,7 +4,7 @@ JC Algos Short Selling Web Tool API
 Flask API for short selling data and charts
 """
 
-from flask import Flask, jsonify, request, send_from_directory
+from flask import Flask, jsonify, request, send_from_directory, make_response
 import pandas as pd
 from datetime import datetime, timedelta
 import json
@@ -18,13 +18,21 @@ from stock_names import get_chinese_name
 
 app = Flask(__name__, static_folder='static')
 
+# CORS headers for cross-origin requests
+@app.after_request
+def after_request(response):
+    response.headers.add('Access-Control-Allow-Origin', '*')
+    response.headers.add('Access-Control-Allow-Headers', 'Content-Type,Authorization')
+    response.headers.add('Access-Control-Allow-Methods', 'GET,OPTIONS')
+    return response
+
 # Data directories
 DATA_DIR = Path(__file__).parent / "data"
 SFC_DATA_DIR = DATA_DIR / "short_positions"
 HKEX_DATA_DIR = DATA_DIR / "hkex_short_selling"
 
 
-def get_historical_sfc_data(stock_code: str, weeks: int = 10) -> list:
+def get_historical_sfc_data(stock_code: str, weeks: int = 14) -> list:
     """Get historical SFC short position data for a stock"""
     code = str(stock_code).zfill(4)
     code_int = int(code)
@@ -160,8 +168,8 @@ def lookup_stock():
             if daily_data.get('found') and daily_data.get('short_shares'):
                 daily_data['pct_of_float'] = round(daily_data['short_shares'] / float_data['float_shares'] * 100, 4)
         
-        # Get historical data for chart
-        historical_sfc = get_historical_sfc_data(code, weeks=10)
+        # Get historical data for chart (14 weeks = 1 quarter)
+        historical_sfc = get_historical_sfc_data(code, weeks=14)
         historical_hkex = get_historical_hkex_data(code, days=10)
         
         return jsonify({
