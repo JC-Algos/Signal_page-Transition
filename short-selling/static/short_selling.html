@@ -338,11 +338,15 @@
             }
             
             // SFC aggregate line showing % of float
+            // Parse dates properly for Plotly
+            const dates = historicalAgg.map(d => d.date);
+            
             const aggTrace = {
-                x: historicalAgg.map(d => d.date),
+                x: dates,
                 y: historicalAgg.map(d => d.pct_of_float || 0),
+                text: dates,  // Show full date in hover
                 customdata: historicalAgg.map(d => d.pct_of_float ? `${d.pct_of_float}%` : ''),
-                hovertemplate: '%{x}<br>%{customdata}<extra></extra>',
+                hovertemplate: '%{text}<br>%{customdata}<extra></extra>',
                 type: 'scatter',
                 mode: 'lines+markers',
                 line: { color: '#8b5cf6', width: 2 },
@@ -353,12 +357,23 @@
             };
             
             const layout = {
+                title: {
+                    text: '累計沽空倉位',
+                    font: { size: 14, color: '#6b21a8', family: 'Noto Sans TC, sans-serif' },
+                    x: 0.5,
+                    xanchor: 'center',
+                    y: 0.95
+                },
                 showlegend: false,
-                margin: { t: 10, r: 15, b: 40, l: 50 },
+                margin: { t: 35, r: 15, b: 50, l: 50 },
                 xaxis: { 
                     tickangle: -45,
-                    tickfont: { size: 9 },
-                    showgrid: false
+                    tickfont: { size: 10 },
+                    tickformat: '%Y-%m-%d',
+                    showgrid: false,
+                    dtick: 'M1',  // Show tick every month
+                    tickmode: 'auto',
+                    nticks: 8
                 },
                 yaxis: { 
                     title: { text: '% 流通股', font: { size: 10 } },
