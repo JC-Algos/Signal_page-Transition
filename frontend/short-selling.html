@@ -13,20 +13,20 @@
 
     <style>
         :root {
-            --primary: #4f46e5;
-            --primary-light: #818cf8;
-            --secondary: #6366f1;
-            --accent: #a5b4fc;
-            --dark: #1e1b4b;
+            --primary: #ea580c;
+            --primary-light: #fb923c;
+            --secondary: #f97316;
+            --accent: #fdba74;
+            --dark: #431407;
             --success: #10b981;
-            --danger: #f87171;
+            --danger: #ef4444;
         }
 
         body {
             font-family: 'Inter', 'Noto Sans TC', 'Microsoft JhengHei', Arial, sans-serif;
-            background: linear-gradient(135deg, #1e1b4b 0%, #312e81 50%, #1e1b4b 100%);
+            background: linear-gradient(135deg, #fef7ed 0%, #fff7ed 50%, #fef3e2 100%);
             min-height: 100vh;
-            color: #e0e7ff;
+            color: #1c1917;
         }
 
         /* Login Container */
@@ -34,10 +34,10 @@
             max-width: 400px;
             margin: 100px auto;
             padding: 30px;
-            background: rgba(30, 27, 75, 0.95);
+            background: white;
             border-radius: 16px;
-            box-shadow: 0 0 40px rgba(99, 102, 241, 0.2);
-            border: 1px solid rgba(129, 140, 248, 0.3);
+            box-shadow: 0 4px 40px rgba(234, 88, 12, 0.15);
+            border: 1px solid rgba(251, 146, 60, 0.3);
         }
 
         /* Main Container */
@@ -48,44 +48,44 @@
 
         /* Header */
         .header {
-            background: linear-gradient(135deg, #4338ca 0%, #6366f1 100%);
+            background: linear-gradient(135deg, #ea580c 0%, #f97316 100%);
             color: white;
             padding: 20px 30px;
             border-radius: 16px;
             margin-bottom: 25px;
-            box-shadow: 0 8px 32px rgba(99, 102, 241, 0.3);
-            border: 1px solid rgba(165, 180, 252, 0.2);
+            box-shadow: 0 8px 32px rgba(234, 88, 12, 0.3);
+            border: none;
         }
 
         .header h1 {
             font-size: 1.8rem;
             margin: 0;
-            background: linear-gradient(90deg, #fff, #c7d2fe);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
+            color: white;
+            background: none;
+            -webkit-background-clip: unset;
+            -webkit-text-fill-color: unset;
         }
 
         .header p {
             margin: 5px 0 0 0;
             opacity: 0.9;
             font-size: 0.95rem;
-            color: #e0e7ff;
+            color: #ffedd5;
         }
 
         /* Cards */
         .card-dark {
-            background: rgba(30, 27, 75, 0.9);
+            background: white;
             border-radius: 16px;
             padding: 24px;
-            box-shadow: 0 4px 24px rgba(0, 0, 0, 0.4);
-            border: 1px solid rgba(129, 140, 248, 0.2);
+            box-shadow: 0 4px 24px rgba(0, 0, 0, 0.08);
+            border: 1px solid #fed7aa;
             margin-bottom: 20px;
-            backdrop-filter: blur(10px);
         }
 
         .card-dark h5 {
-            color: #c7d2fe;
-            border-bottom: 2px solid var(--secondary);
+            color: #c2410c;
+            border-bottom: 2px solid #fdba74;
             padding-bottom: 12px;
             margin-bottom: 20px;
             font-weight: 600;
@@ -93,23 +93,23 @@
 
         /* Input Styles */
         .form-control-dark {
-            background: rgba(49, 46, 129, 0.6);
-            border: 1px solid rgba(129, 140, 248, 0.3);
-            color: #e0e7ff;
+            background: #fffbf5;
+            border: 1px solid #fed7aa;
+            color: #1c1917;
             border-radius: 10px;
             padding: 12px 16px;
         }
 
         .form-control-dark:focus {
-            background: rgba(49, 46, 129, 0.8);
-            border-color: var(--primary-light);
-            box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.3);
-            color: #fff;
+            background: white;
+            border-color: var(--secondary);
+            box-shadow: 0 0 0 3px rgba(249, 115, 22, 0.2);
+            color: #1c1917;
         }
 
         /* Buttons */
         .btn-cyan {
-            background: linear-gradient(135deg, var(--secondary) 0%, var(--primary) 100%);
+            background: linear-gradient(135deg, #f97316 0%, #ea580c 100%);
             border: none;
             color: white;
             font-weight: 500;
@@ -125,8 +125,8 @@
         }
 
         .btn-outline-cyan {
-            border: 1px solid var(--primary-light);
-            color: #c7d2fe;
+            border: 1px solid var(--secondary);
+            color: #c2410c;
             background: transparent;
             border-radius: 10px;
             transition: all 0.3s ease;
@@ -139,25 +139,25 @@
 
         /* Data Cards */
         .data-card {
-            background: rgba(49, 46, 129, 0.5);
+            background: #fffbf5;
             border-radius: 12px;
             padding: 20px;
-            border: 1px solid rgba(129, 140, 248, 0.2);
+            border: 1px solid #fed7aa;
         }
 
         .data-card-blue {
-            background: linear-gradient(135deg, rgba(59, 130, 246, 0.25), rgba(37, 99, 235, 0.15));
-            border-color: rgba(96, 165, 250, 0.4);
+            background: linear-gradient(135deg, #eff6ff, #dbeafe);
+            border-color: #93c5fd;
         }
 
         .data-card-amber {
-            background: linear-gradient(135deg, rgba(251, 191, 36, 0.2), rgba(245, 158, 11, 0.15));
-            border-color: rgba(251, 191, 36, 0.4);
+            background: linear-gradient(135deg, #fffbeb, #fef3c7);
+            border-color: #fcd34d;
         }
 
         .data-card-purple {
-            background: linear-gradient(135deg, rgba(167, 139, 250, 0.2), rgba(139, 92, 246, 0.15));
-            border-color: rgba(167, 139, 250, 0.4);
+            background: linear-gradient(135deg, #faf5ff, #f3e8ff);
+            border-color: #d8b4fe;
         }
 
         /* Stock Rows */
@@ -171,7 +171,7 @@
         }
 
         .stock-row:hover {
-            background: rgba(129, 140, 248, 0.15);
+            background: #fff7ed;
         }
 
         .rank-badge {
@@ -187,9 +187,9 @@
         }
 
         .rank-1 { background: linear-gradient(135deg, #fbbf24, #fcd34d); color: #78350f; }
-        .rank-2 { background: linear-gradient(135deg, #d1d5db, #f3f4f6); color: #374151; }
-        .rank-3 { background: linear-gradient(135deg, #f59e0b, #fbbf24); color: #78350f; }
-        .rank-other { background: rgba(129, 140, 248, 0.3); color: #c7d2fe; }
+        .rank-2 { background: linear-gradient(135deg, #d1d5db, #e5e7eb); color: #374151; }
+        .rank-3 { background: linear-gradient(135deg, #fb923c, #fdba74); color: #7c2d12; }
+        .rank-other { background: #fed7aa; color: #9a3412; }
 
         .pct-badge {
             padding: 4px 10px;
@@ -198,17 +198,17 @@
             font-weight: 600;
         }
 
-        .pct-high { background: rgba(239, 68, 68, 0.2); color: #f87171; }
-        .pct-medium { background: rgba(245, 158, 11, 0.2); color: #fbbf24; }
-        .pct-low { background: rgba(16, 185, 129, 0.2); color: #34d399; }
+        .pct-high { background: #fee2e2; color: #dc2626; }
+        .pct-medium { background: #fef3c7; color: #d97706; }
+        .pct-low { background: #d1fae5; color: #059669; }
 
         /* Loading */
         .loading {
             display: inline-block;
             width: 24px;
             height: 24px;
-            border: 3px solid rgba(129, 140, 248, 0.3);
-            border-top: 3px solid #a5b4fc;
+            border: 3px solid #fed7aa;
+            border-top: 3px solid #f97316;
             border-radius: 50%;
             animation: spin 1s linear infinite;
         }
@@ -219,11 +219,16 @@
         }
 
         /* Labels */
-        .label-blue { color: #93c5fd; }
-        .label-amber { color: #fcd34d; }
-        .label-purple { color: #c4b5fd; }
+        .label-blue { color: #2563eb; }
+        .label-amber { color: #d97706; }
+        .label-purple { color: #7c3aed; }
 
-        .text-danger-light { color: #fca5a5; }
+        .text-danger-light { color: #dc2626; }
+        
+        /* Light theme text overrides */
+        .text-white { color: #1c1917 !important; }
+        .text-muted { color: #78716c !important; }
+        .fw-medium { color: #292524; }
     </style>
 </head>
 <body>
