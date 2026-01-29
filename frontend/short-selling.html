@@ -13,20 +13,20 @@
 
     <style>
         :root {
-            --primary: #0d4f4f;
-            --primary-light: #14b8a6;
-            --secondary: #06b6d4;
-            --accent: #22d3ee;
-            --dark: #0f172a;
+            --primary: #4f46e5;
+            --primary-light: #818cf8;
+            --secondary: #6366f1;
+            --accent: #a5b4fc;
+            --dark: #1e1b4b;
             --success: #10b981;
-            --danger: #ef4444;
+            --danger: #f87171;
         }
 
         body {
             font-family: 'Inter', 'Noto Sans TC', 'Microsoft JhengHei', Arial, sans-serif;
-            background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+            background: linear-gradient(135deg, #1e1b4b 0%, #312e81 50%, #1e1b4b 100%);
             min-height: 100vh;
-            color: #e2e8f0;
+            color: #e0e7ff;
         }
 
         /* Login Container */
@@ -34,10 +34,10 @@
             max-width: 400px;
             margin: 100px auto;
             padding: 30px;
-            background: rgba(15, 23, 42, 0.95);
+            background: rgba(30, 27, 75, 0.95);
             border-radius: 16px;
-            box-shadow: 0 0 40px rgba(20, 184, 166, 0.15);
-            border: 1px solid rgba(20, 184, 166, 0.2);
+            box-shadow: 0 0 40px rgba(99, 102, 241, 0.2);
+            border: 1px solid rgba(129, 140, 248, 0.3);
         }
 
         /* Main Container */
@@ -48,19 +48,19 @@
 
         /* Header */
         .header {
-            background: linear-gradient(135deg, var(--primary) 0%, #0d7377 100%);
+            background: linear-gradient(135deg, #4338ca 0%, #6366f1 100%);
             color: white;
             padding: 20px 30px;
             border-radius: 16px;
             margin-bottom: 25px;
-            box-shadow: 0 8px 32px rgba(6, 182, 212, 0.2);
-            border: 1px solid rgba(34, 211, 238, 0.1);
+            box-shadow: 0 8px 32px rgba(99, 102, 241, 0.3);
+            border: 1px solid rgba(165, 180, 252, 0.2);
         }
 
         .header h1 {
             font-size: 1.8rem;
             margin: 0;
-            background: linear-gradient(90deg, #fff, var(--accent));
+            background: linear-gradient(90deg, #fff, #c7d2fe);
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
         }
@@ -69,21 +69,22 @@
             margin: 5px 0 0 0;
             opacity: 0.9;
             font-size: 0.95rem;
+            color: #e0e7ff;
         }
 
         /* Cards */
         .card-dark {
-            background: rgba(15, 23, 42, 0.8);
+            background: rgba(30, 27, 75, 0.9);
             border-radius: 16px;
             padding: 24px;
-            box-shadow: 0 4px 24px rgba(0, 0, 0, 0.3);
-            border: 1px solid rgba(34, 211, 238, 0.1);
+            box-shadow: 0 4px 24px rgba(0, 0, 0, 0.4);
+            border: 1px solid rgba(129, 140, 248, 0.2);
             margin-bottom: 20px;
             backdrop-filter: blur(10px);
         }
 
         .card-dark h5 {
-            color: var(--accent);
+            color: #c7d2fe;
             border-bottom: 2px solid var(--secondary);
             padding-bottom: 12px;
             margin-bottom: 20px;
@@ -92,23 +93,23 @@
 
         /* Input Styles */
         .form-control-dark {
-            background: rgba(30, 41, 59, 0.8);
-            border: 1px solid rgba(34, 211, 238, 0.2);
-            color: #e2e8f0;
+            background: rgba(49, 46, 129, 0.6);
+            border: 1px solid rgba(129, 140, 248, 0.3);
+            color: #e0e7ff;
             border-radius: 10px;
             padding: 12px 16px;
         }
 
         .form-control-dark:focus {
-            background: rgba(30, 41, 59, 0.9);
-            border-color: var(--secondary);
-            box-shadow: 0 0 0 3px rgba(6, 182, 212, 0.2);
+            background: rgba(49, 46, 129, 0.8);
+            border-color: var(--primary-light);
+            box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.3);
             color: #fff;
         }
 
         /* Buttons */
         .btn-cyan {
-            background: linear-gradient(135deg, var(--secondary) 0%, var(--primary-light) 100%);
+            background: linear-gradient(135deg, var(--secondary) 0%, var(--primary) 100%);
             border: none;
             color: white;
             font-weight: 500;
@@ -124,8 +125,8 @@
         }
 
         .btn-outline-cyan {
-            border: 1px solid var(--secondary);
-            color: var(--secondary);
+            border: 1px solid var(--primary-light);
+            color: #c7d2fe;
             background: transparent;
             border-radius: 10px;
             transition: all 0.3s ease;
@@ -138,25 +139,25 @@
 
         /* Data Cards */
         .data-card {
-            background: rgba(30, 41, 59, 0.6);
+            background: rgba(49, 46, 129, 0.5);
             border-radius: 12px;
             padding: 20px;
-            border: 1px solid rgba(34, 211, 238, 0.1);
+            border: 1px solid rgba(129, 140, 248, 0.2);
         }
 
         .data-card-blue {
-            background: linear-gradient(135deg, rgba(59, 130, 246, 0.15), rgba(37, 99, 235, 0.1));
-            border-color: rgba(59, 130, 246, 0.3);
+            background: linear-gradient(135deg, rgba(59, 130, 246, 0.25), rgba(37, 99, 235, 0.15));
+            border-color: rgba(96, 165, 250, 0.4);
         }
 
         .data-card-amber {
-            background: linear-gradient(135deg, rgba(245, 158, 11, 0.15), rgba(217, 119, 6, 0.1));
-            border-color: rgba(245, 158, 11, 0.3);
+            background: linear-gradient(135deg, rgba(251, 191, 36, 0.2), rgba(245, 158, 11, 0.15));
+            border-color: rgba(251, 191, 36, 0.4);
         }
 
         .data-card-purple {
-            background: linear-gradient(135deg, rgba(139, 92, 246, 0.15), rgba(124, 58, 237, 0.1));
-            border-color: rgba(139, 92, 246, 0.3);
+            background: linear-gradient(135deg, rgba(167, 139, 250, 0.2), rgba(139, 92, 246, 0.15));
+            border-color: rgba(167, 139, 250, 0.4);
         }
 
         /* Stock Rows */
@@ -170,7 +171,7 @@
         }
 
         .stock-row:hover {
-            background: rgba(34, 211, 238, 0.1);
+            background: rgba(129, 140, 248, 0.15);
         }
 
         .rank-badge {
@@ -185,10 +186,10 @@
             margin-right: 12px;
         }
 
-        .rank-1 { background: linear-gradient(135deg, #ffd700, #ffec8b); color: #8b6914; }
-        .rank-2 { background: linear-gradient(135deg, #c0c0c0, #e8e8e8); color: #666; }
-        .rank-3 { background: linear-gradient(135deg, #cd7f32, #daa06d); color: #5c3317; }
-        .rank-other { background: rgba(100, 116, 139, 0.3); color: #94a3b8; }
+        .rank-1 { background: linear-gradient(135deg, #fbbf24, #fcd34d); color: #78350f; }
+        .rank-2 { background: linear-gradient(135deg, #d1d5db, #f3f4f6); color: #374151; }
+        .rank-3 { background: linear-gradient(135deg, #f59e0b, #fbbf24); color: #78350f; }
+        .rank-other { background: rgba(129, 140, 248, 0.3); color: #c7d2fe; }
 
         .pct-badge {
             padding: 4px 10px;
@@ -206,8 +207,8 @@
             display: inline-block;
             width: 24px;
             height: 24px;
-            border: 3px solid rgba(34, 211, 238, 0.2);
-            border-top: 3px solid var(--accent);
+            border: 3px solid rgba(129, 140, 248, 0.3);
+            border-top: 3px solid #a5b4fc;
             border-radius: 50%;
             animation: spin 1s linear infinite;
         }
@@ -218,11 +219,11 @@
         }
 
         /* Labels */
-        .label-blue { color: #60a5fa; }
-        .label-amber { color: #fbbf24; }
-        .label-purple { color: #a78bfa; }
+        .label-blue { color: #93c5fd; }
+        .label-amber { color: #fcd34d; }
+        .label-purple { color: #c4b5fd; }
 
-        .text-danger-light { color: #f87171; }
+        .text-danger-light { color: #fca5a5; }
     </style>
 </head>
 <body>
