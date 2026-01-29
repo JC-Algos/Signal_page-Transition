@@ -127,13 +127,9 @@
                         </div>
                     </div>
                     
-                    <!-- Historical Chart (13 weeks) - 3 cols -->
+                    <!-- Historical Chart (14 weeks) - 3 cols -->
                     <div class="md:col-span-3 bg-gradient-to-br from-purple-50 to-purple-100 rounded-xl p-4">
-                        <div class="flex items-center justify-between mb-3">
-                            <h3 class="font-semibold text-purple-800">📈 13週趨勢</h3>
-                            <span class="text-sm text-purple-600">SFC</span>
-                        </div>
-                        <div id="stockChart" style="height: 180px;"></div>
+                        <div id="stockChart" style="height: 200px;"></div>
                     </div>
                 </div>
             </div>
@@ -345,14 +341,15 @@
             const aggTrace = {
                 x: historicalAgg.map(d => d.date),
                 y: historicalAgg.map(d => d.pct_of_float || 0),
-                text: historicalAgg.map(d => d.pct_of_float ? `${d.pct_of_float}%` : ''),
-                name: '% 流通股',
+                customdata: historicalAgg.map(d => d.pct_of_float ? `${d.pct_of_float}%` : ''),
+                hovertemplate: '%{x}<br>%{customdata}<extra></extra>',
                 type: 'scatter',
                 mode: 'lines+markers',
                 line: { color: '#8b5cf6', width: 2 },
                 marker: { size: 6, color: '#8b5cf6' },
                 fill: 'tozeroy',
-                fillcolor: 'rgba(139, 92, 246, 0.1)'
+                fillcolor: 'rgba(139, 92, 246, 0.1)',
+                showlegend: false
             };
             
             const layout = {
