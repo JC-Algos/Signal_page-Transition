@@ -1,0 +1,539 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>JC Algos TradingView Indicators</title>
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;600;700&family=Rajdhani:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary: #00d4ff;
+            --primary-dark: #0099cc;
+            --secondary: #7b2cbf;
+            --accent: #00ff88;
+            --bg-light: #f0f4f8;
+            --bg-card: #ffffff;
+            --text-dark: #1a1a2e;
+            --text-muted: #64748b;
+            --border: rgba(0, 212, 255, 0.3);
+            --glow: rgba(0, 212, 255, 0.4);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Rajdhani', sans-serif;
+            background: linear-gradient(135deg, #f0f4f8 0%, #e2e8f0 50%, #f0f4f8 100%);
+            color: var(--text-dark);
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+
+        /* Cyber grid background */
+        body::before {
+            content: '';
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-image: 
+                linear-gradient(rgba(0, 212, 255, 0.03) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(0, 212, 255, 0.03) 1px, transparent 1px);
+            background-size: 50px 50px;
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 0 20px;
+            position: relative;
+            z-index: 1;
+        }
+
+        /* Header */
+        header {
+            padding: 40px 0;
+            text-align: center;
+            position: relative;
+        }
+
+        .logo {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 3rem;
+            font-weight: 700;
+            background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            text-shadow: 0 0 30px var(--glow);
+            margin-bottom: 10px;
+        }
+
+        .tagline {
+            font-size: 1.3rem;
+            color: var(--text-muted);
+            font-weight: 500;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+        }
+
+        .cyber-line {
+            width: 200px;
+            height: 3px;
+            background: linear-gradient(90deg, transparent, var(--primary), transparent);
+            margin: 20px auto;
+            border-radius: 2px;
+        }
+
+        /* Indicators Grid */
+        .indicators-section {
+            padding: 40px 0 80px;
+        }
+
+        .section-title {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 2rem;
+            text-align: center;
+            margin-bottom: 50px;
+            color: var(--text-dark);
+            position: relative;
+        }
+
+        .section-title::after {
+            content: '';
+            display: block;
+            width: 100px;
+            height: 3px;
+            background: var(--primary);
+            margin: 15px auto 0;
+            border-radius: 2px;
+        }
+
+        .indicators-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 40px;
+        }
+
+        @media (max-width: 968px) {
+            .indicators-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        /* Indicator Card */
+        .indicator-card {
+            background: var(--bg-card);
+            border-radius: 16px;
+            overflow: hidden;
+            box-shadow: 
+                0 4px 20px rgba(0, 0, 0, 0.08),
+                0 0 0 1px var(--border);
+            transition: all 0.3s ease;
+            position: relative;
+        }
+
+        .indicator-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 4px;
+            background: linear-gradient(90deg, var(--primary), var(--secondary));
+        }
+
+        .indicator-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 
+                0 12px 40px rgba(0, 212, 255, 0.15),
+                0 0 0 1px var(--primary);
+        }
+
+        .video-container {
+            position: relative;
+            width: 100%;
+            padding-bottom: 56.25%; /* 16:9 */
+            background: linear-gradient(135deg, #1a1a2e, #2d2d44);
+        }
+
+        .video-container iframe {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            border: none;
+        }
+
+        .video-placeholder {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            color: #64748b;
+            background: linear-gradient(135deg, #e2e8f0, #f0f4f8);
+        }
+
+        .video-placeholder svg {
+            width: 60px;
+            height: 60px;
+            margin-bottom: 10px;
+            opacity: 0.5;
+        }
+
+        .card-content {
+            padding: 25px;
+        }
+
+        .indicator-name {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 1.4rem;
+            font-weight: 600;
+            color: var(--text-dark);
+            margin-bottom: 12px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .indicator-name .badge {
+            font-family: 'Rajdhani', sans-serif;
+            font-size: 0.7rem;
+            padding: 4px 10px;
+            background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+            color: white;
+            border-radius: 20px;
+            text-transform: uppercase;
+            font-weight: 600;
+            letter-spacing: 1px;
+        }
+
+        .indicator-description {
+            font-size: 1rem;
+            color: var(--text-muted);
+            line-height: 1.6;
+            margin-bottom: 20px;
+        }
+
+        .subscribe-btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 10px;
+            padding: 14px 28px;
+            background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-family: 'Rajdhani', sans-serif;
+            font-size: 1.1rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-decoration: none;
+            box-shadow: 0 4px 15px rgba(0, 212, 255, 0.3);
+        }
+
+        .subscribe-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 25px rgba(0, 212, 255, 0.4);
+        }
+
+        .subscribe-btn svg {
+            width: 20px;
+            height: 20px;
+        }
+
+        /* Footer */
+        footer {
+            text-align: center;
+            padding: 40px 0;
+            border-top: 1px solid var(--border);
+            color: var(--text-muted);
+        }
+
+        footer a {
+            color: var(--primary);
+            text-decoration: none;
+        }
+
+        /* Floating particles */
+        .particle {
+            position: fixed;
+            width: 4px;
+            height: 4px;
+            background: var(--primary);
+            border-radius: 50%;
+            opacity: 0.3;
+            pointer-events: none;
+            animation: float 20s infinite;
+        }
+
+        @keyframes float {
+            0%, 100% { transform: translateY(100vh) rotate(0deg); opacity: 0; }
+            10% { opacity: 0.3; }
+            90% { opacity: 0.3; }
+            100% { transform: translateY(-100vh) rotate(720deg); opacity: 0; }
+        }
+    </style>
+</head>
+<body>
+    <!-- Floating particles -->
+    <div class="particle" style="left: 10%; animation-delay: 0s;"></div>
+    <div class="particle" style="left: 20%; animation-delay: 2s;"></div>
+    <div class="particle" style="left: 30%; animation-delay: 4s;"></div>
+    <div class="particle" style="left: 50%; animation-delay: 6s;"></div>
+    <div class="particle" style="left: 70%; animation-delay: 8s;"></div>
+    <div class="particle" style="left: 80%; animation-delay: 10s;"></div>
+    <div class="particle" style="left: 90%; animation-delay: 12s;"></div>
+
+    <div class="container">
+        <header>
+            <h1 class="logo">JC ALGOS</h1>
+            <p class="tagline">TradingView Indicators</p>
+            <div class="cyber-line"></div>
+        </header>
+
+        <section class="indicators-section">
+            <h2 class="section-title">Premium Indicators</h2>
+            
+            <div class="indicators-grid">
+                <!-- Indicator 1 -->
+                <div class="indicator-card">
+                    <div class="video-container">
+                        <div class="video-placeholder">
+                            <svg viewBox="0 0 24 24" fill="currentColor">
+                                <path d="M8 5v14l11-7z"/>
+                            </svg>
+                            <span>YouTube Video Coming Soon</span>
+                        </div>
+                        <!-- <iframe src="https://www.youtube.com/embed/VIDEO_ID_1" allowfullscreen></iframe> -->
+                    </div>
+                    <div class="card-content">
+                        <h3 class="indicator-name">
+                            Indicator Name 1
+                            <span class="badge">Pro</span>
+                        </h3>
+                        <p class="indicator-description">
+                            Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Advanced trading signals with multi-timeframe analysis.
+                        </p>
+                        <a href="#" class="subscribe-btn">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/>
+                            </svg>
+                            Subscribe Now
+                        </a>
+                    </div>
+                </div>
+
+                <!-- Indicator 2 -->
+                <div class="indicator-card">
+                    <div class="video-container">
+                        <div class="video-placeholder">
+                            <svg viewBox="0 0 24 24" fill="currentColor">
+                                <path d="M8 5v14l11-7z"/>
+                            </svg>
+                            <span>YouTube Video Coming Soon</span>
+                        </div>
+                    </div>
+                    <div class="card-content">
+                        <h3 class="indicator-name">
+                            Indicator Name 2
+                            <span class="badge">Pro</span>
+                        </h3>
+                        <p class="indicator-description">
+                            Lorem ipsum dolor sit amet, consectetur adipiscing elit. Powerful momentum detection with customizable alerts and visual signals for optimal entry points.
+                        </p>
+                        <a href="#" class="subscribe-btn">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/>
+                            </svg>
+                            Subscribe Now
+                        </a>
+                    </div>
+                </div>
+
+                <!-- Indicator 3 -->
+                <div class="indicator-card">
+                    <div class="video-container">
+                        <div class="video-placeholder">
+                            <svg viewBox="0 0 24 24" fill="currentColor">
+                                <path d="M8 5v14l11-7z"/>
+                            </svg>
+                            <span>YouTube Video Coming Soon</span>
+                        </div>
+                    </div>
+                    <div class="card-content">
+                        <h3 class="indicator-name">
+                            Indicator Name 3
+                            <span class="badge">Pro</span>
+                        </h3>
+                        <p class="indicator-description">
+                            Lorem ipsum dolor sit amet, consectetur adipiscing elit. Smart support and resistance levels with automatic trend detection and breakout alerts.
+                        </p>
+                        <a href="#" class="subscribe-btn">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/>
+                            </svg>
+                            Subscribe Now
+                        </a>
+                    </div>
+                </div>
+
+                <!-- Indicator 4 -->
+                <div class="indicator-card">
+                    <div class="video-container">
+                        <div class="video-placeholder">
+                            <svg viewBox="0 0 24 24" fill="currentColor">
+                                <path d="M8 5v14l11-7z"/>
+                            </svg>
+                            <span>YouTube Video Coming Soon</span>
+                        </div>
+                    </div>
+                    <div class="card-content">
+                        <h3 class="indicator-name">
+                            Indicator Name 4
+                            <span class="badge">Pro</span>
+                        </h3>
+                        <p class="indicator-description">
+                            Lorem ipsum dolor sit amet, consectetur adipiscing elit. Volume profile analysis with value area detection and point of control visualization.
+                        </p>
+                        <a href="#" class="subscribe-btn">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/>
+                            </svg>
+                            Subscribe Now
+                        </a>
+                    </div>
+                </div>
+
+                <!-- Indicator 5 -->
+                <div class="indicator-card">
+                    <div class="video-container">
+                        <div class="video-placeholder">
+                            <svg viewBox="0 0 24 24" fill="currentColor">
+                                <path d="M8 5v14l11-7z"/>
+                            </svg>
+                            <span>YouTube Video Coming Soon</span>
+                        </div>
+                    </div>
+                    <div class="card-content">
+                        <h3 class="indicator-name">
+                            Indicator Name 5
+                            <span class="badge">Pro</span>
+                        </h3>
+                        <p class="indicator-description">
+                            Lorem ipsum dolor sit amet, consectetur adipiscing elit. Market structure analysis with swing high/low detection and trend continuation patterns.
+                        </p>
+                        <a href="#" class="subscribe-btn">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/>
+                            </svg>
+                            Subscribe Now
+                        </a>
+                    </div>
+                </div>
+
+                <!-- Indicator 6 -->
+                <div class="indicator-card">
+                    <div class="video-container">
+                        <div class="video-placeholder">
+                            <svg viewBox="0 0 24 24" fill="currentColor">
+                                <path d="M8 5v14l11-7z"/>
+                            </svg>
+                            <span>YouTube Video Coming Soon</span>
+                        </div>
+                    </div>
+                    <div class="card-content">
+                        <h3 class="indicator-name">
+                            Indicator Name 6
+                            <span class="badge">Pro</span>
+                        </h3>
+                        <p class="indicator-description">
+                            Lorem ipsum dolor sit amet, consectetur adipiscing elit. Order flow imbalance detector with real-time delta analysis and absorption signals.
+                        </p>
+                        <a href="#" class="subscribe-btn">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/>
+                            </svg>
+                            Subscribe Now
+                        </a>
+                    </div>
+                </div>
+
+                <!-- Indicator 7 -->
+                <div class="indicator-card">
+                    <div class="video-container">
+                        <div class="video-placeholder">
+                            <svg viewBox="0 0 24 24" fill="currentColor">
+                                <path d="M8 5v14l11-7z"/>
+                            </svg>
+                            <span>YouTube Video Coming Soon</span>
+                        </div>
+                    </div>
+                    <div class="card-content">
+                        <h3 class="indicator-name">
+                            Indicator Name 7
+                            <span class="badge">Pro</span>
+                        </h3>
+                        <p class="indicator-description">
+                            Lorem ipsum dolor sit amet, consectetur adipiscing elit. Fibonacci extension and retracement tool with automatic wave counting and target projection.
+                        </p>
+                        <a href="#" class="subscribe-btn">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/>
+                            </svg>
+                            Subscribe Now
+                        </a>
+                    </div>
+                </div>
+
+                <!-- Indicator 8 -->
+                <div class="indicator-card">
+                    <div class="video-container">
+                        <div class="video-placeholder">
+                            <svg viewBox="0 0 24 24" fill="currentColor">
+                                <path d="M8 5v14l11-7z"/>
+                            </svg>
+                            <span>YouTube Video Coming Soon</span>
+                        </div>
+                    </div>
+                    <div class="card-content">
+                        <h3 class="indicator-name">
+                            Indicator Name 8
+                            <span class="badge">Pro</span>
+                        </h3>
+                        <p class="indicator-description">
+                            Lorem ipsum dolor sit amet, consectetur adipiscing elit. Divergence scanner with RSI, MACD, and Stochastic cross-validation for high-probability setups.
+                        </p>
+                        <a href="#" class="subscribe-btn">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/>
+                            </svg>
+                            Subscribe Now
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <footer>
+            <p>&copy; 2026 JC Algos. All rights reserved. | <a href="index.html">Back to Home</a></p>
+        </footer>
+    </div>
+</body>
+</html>
