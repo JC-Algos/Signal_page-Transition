@@ -258,6 +258,30 @@
             height: 20px;
         }
 
+        .price-info {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            margin-bottom: 15px;
+            flex-wrap: wrap;
+        }
+
+        .price-original {
+            font-size: 1.1rem;
+            color: var(--text-muted);
+            text-decoration: line-through;
+        }
+
+        .price-promo {
+            font-size: 1.2rem;
+            font-weight: 700;
+            color: #ff6b6b;
+            background: linear-gradient(135deg, #fff5f5, #ffe3e3);
+            padding: 6px 14px;
+            border-radius: 20px;
+            border: 1px solid #ffc9c9;
+        }
+
         /* Footer */
         footer {
             text-align: center;
@@ -309,87 +333,99 @@
         </header>
 
         <section class="indicators-section">
-            <h2 class="section-title">Premium Indicators</h2>
+            <h2 class="section-title">專業指標 Premium Indicators</h2>
             
             <div class="indicators-grid">
-                <!-- Indicator 1 -->
+                <!-- Indicator 1: Trend Momentum 趨勢動量 -->
                 <div class="indicator-card">
                     <div class="video-container">
                         <div class="video-placeholder">
                             <svg viewBox="0 0 24 24" fill="currentColor">
                                 <path d="M8 5v14l11-7z"/>
                             </svg>
-                            <span>YouTube Video Coming Soon</span>
+                            <span>影片即將推出</span>
                         </div>
                         <!-- <iframe src="https://www.youtube.com/embed/VIDEO_ID_1" allowfullscreen></iframe> -->
                     </div>
                     <div class="card-content">
                         <h3 class="indicator-name">
-                            Indicator Name 1
+                            趨勢動量 Trend Momentum
                             <span class="badge">Pro</span>
                         </h3>
                         <p class="indicator-description">
-                            Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Advanced trading signals with multi-timeframe analysis.
+                            順勢而行，捕捉動量！當真正的動量來臨時觸發訊號。透過多重時間框架分析，精準識別趨勢方向，在動量啟動的黃金時刻發出入場提示，讓您乘風破浪、把握先機。
                         </p>
-                        <a href="#" class="subscribe-btn">
+                        <div class="price-info">
+                            <span class="price-original">HK$399/月</span>
+                            <span class="price-promo">首月優惠 HK$100</span>
+                        </div>
+                        <a href="https://buy.stripe.com/6oU7sD4ex61e2d23aI77O01?prefilled_promo_code=INDICATOR75" class="subscribe-btn">
                             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                                 <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/>
                             </svg>
-                            Subscribe Now
+                            立即訂閱
                         </a>
                     </div>
                 </div>
 
-                <!-- Indicator 2 -->
+                <!-- Indicator 2: MA Band Breakout 均線突破 -->
                 <div class="indicator-card">
                     <div class="video-container">
                         <div class="video-placeholder">
                             <svg viewBox="0 0 24 24" fill="currentColor">
                                 <path d="M8 5v14l11-7z"/>
                             </svg>
-                            <span>YouTube Video Coming Soon</span>
+                            <span>影片即將推出</span>
                         </div>
                     </div>
                     <div class="card-content">
                         <h3 class="indicator-name">
-                            Indicator Name 2
+                            均線突破 MA Band Breakout
                             <span class="badge">Pro</span>
                         </h3>
                         <p class="indicator-description">
-                            Lorem ipsum dolor sit amet, consectetur adipiscing elit. Powerful momentum detection with customizable alerts and visual signals for optimal entry points.
+                            自動識別均線帶突破訊號！結合多條移動平均線形成動態通道，當價格突破均線帶時即時發出警報。視覺化顯示突破強度，助您捕捉趨勢啟動的最佳時機。
                         </p>
-                        <a href="#" class="subscribe-btn">
+                        <div class="price-info">
+                            <span class="price-original">HK$199/月</span>
+                            <span class="price-promo">首月優惠 HK$50</span>
+                        </div>
+                        <a href="https://buy.stripe.com/00w4grcL32P29Fu6mU77O02?prefilled_promo_code=INDICATOR75" class="subscribe-btn">
                             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                                 <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/>
                             </svg>
-                            Subscribe Now
+                            立即訂閱
                         </a>
                     </div>
                 </div>
 
-                <!-- Indicator 3 -->
+                <!-- Indicator 3: SMR Dashboard 強弱動量輪動儀表板 -->
                 <div class="indicator-card">
                     <div class="video-container">
                         <div class="video-placeholder">
                             <svg viewBox="0 0 24 24" fill="currentColor">
                                 <path d="M8 5v14l11-7z"/>
                             </svg>
-                            <span>YouTube Video Coming Soon</span>
+                            <span>影片即將推出</span>
                         </div>
                     </div>
                     <div class="card-content">
                         <h3 class="indicator-name">
-                            Indicator Name 3
-                            <span class="badge">Pro</span>
+                            All-in-one SMR 儀表板
+                            <span class="badge">Premium</span>
                         </h3>
                         <p class="indicator-description">
-                            Lorem ipsum dolor sit amet, consectetur adipiscing elit. Smart support and resistance levels with automatic trend detection and breakout alerts.
+                            一站式交易指標套件！整合強弱動量輪動(SMR)儀表板，多股票同步監控、趨勢分析、動量訊號及板塊輪動洞察。實時掃描市場，視覺化儀表板助您快速決策。
                         </p>
-                        <a href="#" class="subscribe-btn">
+                        <div class="price-info">
+                            <span class="price-original">HK$899/月</span>
+                            <span class="price-promo">首月優惠 HK$225</span>
+                        </div>
+                        <a href="https://buy.stripe.com/7sY7sD7qJ0GU5pedPm77O03?prefilled_promo_code=INDICATOR75" class="subscribe-btn">
                             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                                 <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/>
                             </svg>
-                            Subscribe Now
+                            立即訂閱
                         </a>
                     </div>
                 </div>
