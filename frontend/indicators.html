@@ -92,6 +92,39 @@
             border-radius: 2px;
         }
 
+        /* Hero Description */
+        .hero-description {
+            text-align: center;
+            max-width: 800px;
+            margin: 0 auto 40px;
+            padding: 30px 20px;
+        }
+
+        .hero-quote {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 1.6rem;
+            font-weight: 600;
+            color: var(--primary-dark);
+            margin-bottom: 20px;
+            font-style: italic;
+            text-shadow: 0 0 20px var(--glow);
+        }
+
+        .hero-text {
+            font-size: 1.15rem;
+            color: var(--text-muted);
+            line-height: 1.9;
+            letter-spacing: 0.5px;
+        }
+
+        .hero-text .highlight {
+            color: var(--primary-dark);
+            font-weight: 600;
+            background: linear-gradient(135deg, rgba(0, 212, 255, 0.1), rgba(0, 153, 204, 0.1));
+            padding: 2px 8px;
+            border-radius: 4px;
+        }
+
         /* Indicators Grid */
         .indicators-section {
             padding: 40px 0 80px;
@@ -331,6 +364,15 @@
             <p class="tagline">TradingView Indicators</p>
             <div class="cyber-line"></div>
         </header>
+
+        <!-- Hero Description -->
+        <div class="hero-description">
+            <p class="hero-quote">"Trend is your friend — until it ends."</p>
+            <p class="hero-text">
+                完整的交易策略應包含<span class="highlight">趨勢動量追蹤</span>與<span class="highlight">趨勢反轉捕捉</span>，<br>
+                方能從容應對所有市場結構，立於不敗之地。
+            </p>
+        </div>
 
         <section class="indicators-section">
             <h2 class="section-title">專業指標 Premium Indicators</h2>
