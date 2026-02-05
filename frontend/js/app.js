@@ -4,7 +4,10 @@
  */
 
 // API Configuration
-const API_BASE = window.location.origin;
+// Backend runs on VPS Docker container; frontend can be hosted anywhere (Hostinger, etc.)
+const API_BASE = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1' 
+    ? window.location.origin 
+    : 'https://signal.srv1295571.hstgr.cloud';
 
 // State Management
 let state = {
