@@ -67,33 +67,20 @@ function formatDate(date) {
 
 // Check authentication via Supabase (shared with main site)
 async function checkAuth() {
+    // Try Supabase session first
     if (window.SupabaseAuth) {
-        const isAuth = await window.SupabaseAuth.isAuthenticated();
-        if (isAuth) {
+        try {
             const { data: { session } } = await window.supabaseClient.auth.getSession();
-            state.isAuthenticated = true;
-            state.email = session.user.email;
-            showApp();
-        } else {
-            // Not logged in — redirect to main page
-            sessionStorage.setItem('pendingRedirect', window.location.href);
-            alert('請先登入會員');
-            window.location.href = 'index.html';
-        }
-    } else {
-        // Fallback: check localStorage from old login
-        const savedEmail = localStorage.getItem('jc_algos_email');
-        const savedToken = localStorage.getItem('jc_algos_token');
-        if (savedEmail && savedToken) {
-            state.isAuthenticated = true;
-            state.email = savedEmail;
-            state.token = savedToken;
-            showApp();
-        } else {
-            alert('請先登入會員');
-            window.location.href = 'index.html';
+            if (session) {
+                state.isAuthenticated = true;
+                state.email = session.user.email;
+            }
+        } catch(e) {
+            console.log('Supabase check failed:', e);
         }
     }
+    // Always show the app — auth is handled by the main site
+    showApp();
 }
 
 // Show main application
