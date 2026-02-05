@@ -7,34 +7,10 @@
     <link rel="stylesheet" href="style.css">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+    <script src="supabase-config.js"></script>
 </head>
 <body>
-    <!-- Login Modal -->
-    <div id="loginModal" class="modal">
-        <div class="modal-content login-modal">
-            <div class="login-header">
-                <i class="fas fa-chart-line logo-icon"></i>
-                <h1>JC Algos Signal</h1>
-                <p>Trading Signal Analysis Platform</p>
-            </div>
-            <div class="login-body">
-                <div class="alert alert-warning">
-                    <i class="fas fa-lock"></i>
-                    <span>請完登錄才能訪問此頁面</span>
-                </div>
-                <form id="loginForm">
-                    <div class="form-group">
-                        <label for="email">Enter your registered email:</label>
-                        <input type="email" id="email" placeholder="your@email.com" required>
-                    </div>
-                    <button type="submit" class="btn btn-primary btn-block">
-                        <i class="fas fa-sign-in-alt"></i> Login
-                    </button>
-                </form>
-                <div id="loginError" class="alert alert-error" style="display: none;"></div>
-            </div>
-        </div>
-    </div>
 
     <!-- Main Application -->
     <div id="app" style="display: none;">

@@ -18,10 +18,6 @@ let state = {
 
 // DOM Elements
 const elements = {
-    loginModal: document.getElementById('loginModal'),
-    loginForm: document.getElementById('loginForm'),
-    loginError: document.getElementById('loginError'),
-    emailInput: document.getElementById('email'),
     app: document.getElementById('app'),
     userEmail: document.getElementById('userEmail'),
     logoutBtn: document.getElementById('logoutBtn'),
@@ -69,30 +65,39 @@ function formatDate(date) {
     return date.toISOString().split('T')[0];
 }
 
-// Check authentication
-function checkAuth() {
-    const savedEmail = localStorage.getItem('jc_algos_email');
-    const savedToken = localStorage.getItem('jc_algos_token');
-    
-    if (savedEmail && savedToken) {
-        state.isAuthenticated = true;
-        state.email = savedEmail;
-        state.token = savedToken;
-        showApp();
+// Check authentication via Supabase (shared with main site)
+async function checkAuth() {
+    if (window.SupabaseAuth) {
+        const isAuth = await window.SupabaseAuth.isAuthenticated();
+        if (isAuth) {
+            const { data: { session } } = await window.supabaseClient.auth.getSession();
+            state.isAuthenticated = true;
+            state.email = session.user.email;
+            showApp();
+        } else {
+            // Not logged in — redirect to main page
+            sessionStorage.setItem('pendingRedirect', window.location.href);
+            alert('請先登入會員');
+            window.location.href = 'index.html';
+        }
     } else {
-        showLoginModal();
+        // Fallback: check localStorage from old login
+        const savedEmail = localStorage.getItem('jc_algos_email');
+        const savedToken = localStorage.getItem('jc_algos_token');
+        if (savedEmail && savedToken) {
+            state.isAuthenticated = true;
+            state.email = savedEmail;
+            state.token = savedToken;
+            showApp();
+        } else {
+            alert('請先登入會員');
+            window.location.href = 'index.html';
+        }
     }
-}
-
-// Show login modal
-function showLoginModal() {
-    elements.loginModal.style.display = 'flex';
-    elements.app.style.display = 'none';
 }
 
 // Show main application
 function showApp() {
-    elements.loginModal.style.display = 'none';
     elements.app.style.display = 'block';
     elements.userEmail.textContent = state.email;
     loadHistory();
@@ -100,11 +105,10 @@ function showApp() {
 
 // Setup event listeners
 function setupEventListeners() {
-    // Login form
-    elements.loginForm.addEventListener('submit', handleLogin);
-    
     // Logout
-    elements.logoutBtn.addEventListener('click', handleLogout);
+    if (elements.logoutBtn) {
+        elements.logoutBtn.addEventListener('click', handleLogout);
+    }
     
     // Date method toggle
     document.querySelectorAll('input[name="dateMethod"]').forEach(radio => {
@@ -176,7 +180,7 @@ function showLoginError(message) {
 }
 
 // Handle logout
-function handleLogout() {
+async function handleLogout() {
     state.isAuthenticated = false;
     state.email = '';
     state.token = '';
@@ -184,7 +188,11 @@ function handleLogout() {
     localStorage.removeItem('jc_algos_email');
     localStorage.removeItem('jc_algos_token');
     
-    showLoginModal();
+    if (window.SupabaseAuth) {
+        await window.SupabaseAuth.signOut();
+    } else {
+        window.location.href = 'index.html';
+    }
 }
 
 // Handle date method change
