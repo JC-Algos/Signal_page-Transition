@@ -1,0 +1,285 @@
+<!DOCTYPE html>
+<html lang="zh-HK">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>JC Algos Signal - Trading Signal Analysis</title>
+    <link rel="stylesheet" href="style.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body>
+    <!-- Login Modal -->
+    <div id="loginModal" class="modal">
+        <div class="modal-content login-modal">
+            <div class="login-header">
+                <i class="fas fa-chart-line logo-icon"></i>
+                <h1>JC Algos Signal</h1>
+                <p>Trading Signal Analysis Platform</p>
+            </div>
+            <div class="login-body">
+                <div class="alert alert-warning">
+                    <i class="fas fa-lock"></i>
+                    <span>請完登錄才能訪問此頁面</span>
+                </div>
+                <form id="loginForm">
+                    <div class="form-group">
+                        <label for="email">Enter your registered email:</label>
+                        <input type="email" id="email" placeholder="your@email.com" required>
+                    </div>
+                    <button type="submit" class="btn btn-primary btn-block">
+                        <i class="fas fa-sign-in-alt"></i> Login
+                    </button>
+                </form>
+                <div id="loginError" class="alert alert-error" style="display: none;"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main Application -->
+    <div id="app" style="display: none;">
+        <!-- Header -->
+        <header class="header">
+            <div class="header-left">
+                <i class="fas fa-chart-line logo-icon"></i>
+                <h1>JC Algos Signal</h1>
+            </div>
+            <div class="header-right">
+                <span id="userEmail" class="user-email"></span>
+                <button id="logoutBtn" class="btn btn-outline">
+                    <i class="fas fa-sign-out-alt"></i> Logout
+                </button>
+            </div>
+        </header>
+
+        <!-- Main Content -->
+        <main class="main-content">
+            <!-- Sidebar Filters -->
+            <aside class="sidebar">
+                <div class="sidebar-section">
+                    <h3><i class="fas fa-filter"></i> Filter Options</h3>
+                    
+                    <div class="form-group">
+                        <label for="exchangeSelect">Select Exchange</label>
+                        <select id="exchangeSelect">
+                            <option value="HKEX">Hong Kong (HKEX)</option>
+                            <option value="BATS">US (BATS)</option>
+                            <option value="SSE_DLY">Shanghai (SSE)</option>
+                            <option value="ZSE_DLY">Shenzhen (ZSE)</option>
+                            <option value="OANDA">Forex (OANDA)</option>
+                            <option value="HSI">HSI Index</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label>Date Range Method</label>
+                        <div class="radio-group">
+                            <label class="radio-label">
+                                <input type="radio" name="dateMethod" value="days" checked>
+                                <span>Days to Look Back</span>
+                            </label>
+                            <label class="radio-label">
+                                <input type="radio" name="dateMethod" value="custom">
+                                <span>Custom Date Range</span>
+                            </label>
+                        </div>
+                    </div>
+
+                    <div id="daysInput" class="form-group">
+                        <label for="daysAgo">Number of days to look back</label>
+                        <input type="number" id="daysAgo" value="1" min="1" max="20">
+                    </div>
+
+                    <div id="dateRangeInput" class="form-group" style="display: none;">
+                        <label for="fromDate">From Date</label>
+                        <input type="date" id="fromDate">
+                        <label for="toDate">To Date</label>
+                        <input type="date" id="toDate">
+                    </div>
+                </div>
+
+                <div class="sidebar-section">
+                    <h3><i class="fas fa-sort"></i> Sorting Options</h3>
+                    
+                    <div class="checkbox-group">
+                        <label class="checkbox-label">
+                            <input type="checkbox" id="sortBySentiment" checked>
+                            <span>Sort by 看好看淡 (看好 first)</span>
+                        </label>
+                        <label class="checkbox-label">
+                            <input type="checkbox" id="sortByPL">
+                            <span>Sort by % P/L</span>
+                        </label>
+                    </div>
+
+                    <div id="plSortOrder" class="form-group" style="display: none;">
+                        <label>P/L Sort Order</label>
+                        <select id="plSortSelect">
+                            <option value="desc">Highest First</option>
+                            <option value="asc">Lowest First</option>
+                        </select>
+                    </div>
+                </div>
+
+                <button id="fetchBtn" class="btn btn-primary btn-block">
+                    <i class="fas fa-sync-alt"></i> Fetch Signals
+                </button>
+            </aside>
+
+            <!-- Content Area -->
+            <div class="content">
+                <!-- Tabs -->
+                <div class="tabs">
+                    <button class="tab-btn active" data-tab="telegram">
+                        <i class="fab fa-telegram"></i> Fetch from Telegram
+                    </button>
+                    <button class="tab-btn" data-tab="history">
+                        <i class="fas fa-history"></i> Signal History
+                    </button>
+                </div>
+
+                <!-- Telegram Tab -->
+                <div id="telegramTab" class="tab-content active">
+                    <!-- Loading -->
+                    <div id="loading" class="loading" style="display: none;">
+                        <div class="spinner"></div>
+                        <p>Fetching signals from Telegram...</p>
+                    </div>
+
+                    <!-- Statistics Cards -->
+                    <div id="statsSection" class="stats-section" style="display: none;">
+                        <h2><i class="fas fa-chart-bar"></i> 信號統計摘要</h2>
+                        <div class="stats-grid">
+                            <div class="stat-card bullish">
+                                <div class="stat-icon"><i class="fas fa-arrow-up"></i></div>
+                                <div class="stat-info">
+                                    <span class="stat-label">買入信號 (好)</span>
+                                    <span id="buySignals" class="stat-value">0</span>
+                                </div>
+                            </div>
+                            <div class="stat-card bearish">
+                                <div class="stat-icon"><i class="fas fa-arrow-down"></i></div>
+                                <div class="stat-info">
+                                    <span class="stat-label">賣出信號 (淡)</span>
+                                    <span id="sellSignals" class="stat-value">0</span>
+                                </div>
+                            </div>
+                            <div class="stat-card valid-bullish">
+                                <div class="stat-icon"><i class="fas fa-check-circle"></i></div>
+                                <div class="stat-info">
+                                    <span class="stat-label">有效買入信號</span>
+                                    <span id="validBuySignals" class="stat-value">0</span>
+                                </div>
+                            </div>
+                            <div class="stat-card valid-bearish">
+                                <div class="stat-icon"><i class="fas fa-check-circle"></i></div>
+                                <div class="stat-info">
+                                    <span class="stat-label">有效賣出信號</span>
+                                    <span id="validSellSignals" class="stat-value">0</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="momentum-summary">
+                            <div class="momentum-item">
+                                <span class="momentum-label">初始動量比率:</span>
+                                <span id="initialRatio" class="momentum-value"></span>
+                            </div>
+                            <div class="momentum-item">
+                                <span class="momentum-label">實際動量比率:</span>
+                                <span id="actualRatio" class="momentum-value"></span>
+                            </div>
+                            <div class="momentum-item">
+                                <span class="momentum-label">看好動量強度:</span>
+                                <span id="bullishStrength" class="momentum-value bullish"></span>
+                            </div>
+                            <div class="momentum-item">
+                                <span class="momentum-label">看淡動量強度:</span>
+                                <span id="bearishStrength" class="momentum-value bearish"></span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Signals Table -->
+                    <div id="signalsSection" class="signals-section" style="display: none;">
+                        <div class="section-header">
+                            <h2><i class="fas fa-table"></i> 信號詳細數據</h2>
+                            <button id="exportBtn" class="btn btn-outline">
+                                <i class="fas fa-download"></i> Export CSV
+                            </button>
+                        </div>
+                        <div class="table-container">
+                            <table id="signalsTable" class="data-table">
+                                <thead>
+                                    <tr>
+                                        <th>Ticker</th>
+                                        <th>看好看淡</th>
+                                        <th>信號觸發價</th>
+                                        <th>策略失效價</th>
+                                        <th>阻力 1</th>
+                                        <th>阻力 2</th>
+                                        <th>阻力 3</th>
+                                        <th>日期</th>
+                                        <th>策略</th>
+                                        <th>Trigger Day's Close</th>
+                                        <th>Present Close</th>
+                                        <th>% P/L</th>
+                                        <th>Valid Signal?</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="signalsTableBody">
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <!-- Empty State -->
+                    <div id="emptyState" class="empty-state">
+                        <i class="fas fa-search"></i>
+                        <h3>No Signals Yet</h3>
+                        <p>Click "Fetch Signals" to retrieve trading signals from Telegram</p>
+                    </div>
+                </div>
+
+                <!-- History Tab -->
+                <div id="historyTab" class="tab-content">
+                    <div class="section-header">
+                        <h2><i class="fas fa-history"></i> <span id="historyExchange">HKEX</span> 信號歷史統計</h2>
+                    </div>
+                    <div class="table-container">
+                        <table id="historyTable" class="data-table">
+                            <thead>
+                                <tr>
+                                    <th>日期</th>
+                                    <th>買入信號數量</th>
+                                    <th>有效買入信號</th>
+                                    <th>賣出信號數量</th>
+                                    <th>有效賣出信號</th>
+                                    <th>初始動量比率</th>
+                                    <th>實際動量比率</th>
+                                    <th>看好動量強度</th>
+                                    <th>看淡動量強度</th>
+                                </tr>
+                            </thead>
+                            <tbody id="historyTableBody">
+                            </tbody>
+                        </table>
+                    </div>
+                    <div id="historyEmpty" class="empty-state">
+                        <i class="fas fa-database"></i>
+                        <h3>No History Data</h3>
+                        <p>Signal history will be saved as you analyze different dates</p>
+                    </div>
+                </div>
+            </div>
+        </main>
+
+        <!-- Footer -->
+        <footer class="footer">
+            <p>&copy; 2024 JC Algos Signal. All rights reserved.</p>
+        </footer>
+    </div>
+
+    <script src="app.js"></script>
+</body>
+</html>
