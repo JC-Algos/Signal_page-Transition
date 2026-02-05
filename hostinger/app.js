@@ -6,6 +6,40 @@
 // API Configuration
 const API_BASE = 'https://signal.srv1295571.hstgr.cloud';
 
+// Supabase Configuration (shared with main site)
+const SUPABASE_URL = 'https://nwhyoravkuyiuewlfgfw.supabase.co';
+const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im53aHlvcmF2a3V5aXVld2xmZ2Z3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njc3MTU5NTgsImV4cCI6MjA4MzI5MTk1OH0.kNjZpRwdYDLHNCjscq6suOGz2PNst8FNAVm5FsS87VI';
+
+let supabaseClient = null;
+if (typeof window.supabase !== 'undefined' && window.supabase.createClient) {
+    supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+}
+
+// Check if user has access (any registered user)
+async function checkUserAccess(userId) {
+    try {
+        const { data: profile, error } = await supabaseClient
+            .from('user_profiles')
+            .select('*')
+            .eq('id', userId)
+            .single();
+        if (error) {
+            if (error.code === 'PGRST116') {
+                return { hasAccess: true, tier: 'free' };
+            }
+            return { hasAccess: false, tier: null };
+        }
+        const dbStatus = (profile.membership_status || 'free').toLowerCase().trim();
+        return { 
+            hasAccess: true, 
+            tier: dbStatus,
+            isPremium: (dbStatus === 'premium') || (dbStatus === 'active') || profile.subscription_status === 'active'
+        };
+    } catch (err) {
+        return { hasAccess: false, tier: null };
+    }
+}
+
 // State Management
 let state = {
     isAuthenticated: false,
@@ -65,22 +99,34 @@ function formatDate(date) {
     return date.toISOString().split('T')[0];
 }
 
-// Check authentication via Supabase (shared with main site)
+// Check authentication via Supabase (same pattern as technical.html, etc.)
 async function checkAuth() {
-    // Try Supabase session first
-    if (window.SupabaseAuth) {
-        try {
-            const { data: { session } } = await window.supabaseClient.auth.getSession();
-            if (session) {
-                state.isAuthenticated = true;
-                state.email = session.user.email;
-            }
-        } catch(e) {
-            console.log('Supabase check failed:', e);
+    try {
+        if (!supabaseClient) {
+            showApp(); // Fallback: show app if Supabase not loaded
+            return;
         }
+        const { data: { user } } = await supabaseClient.auth.getUser();
+        if (user) {
+            const access = await checkUserAccess(user.id);
+            if (access.hasAccess) {
+                state.isAuthenticated = true;
+                state.email = user.email;
+                showApp();
+            } else {
+                // Registered but no access — redirect to main
+                window.location.href = 'index.html';
+            }
+        } else {
+            // Not logged in — redirect to main login
+            sessionStorage.setItem('pendingRedirect', window.location.href);
+            window.location.href = 'index.html';
+        }
+    } catch (error) {
+        console.error('Auth check error:', error);
+        // On error, redirect to login
+        window.location.href = 'index.html';
     }
-    // Always show the app — auth is handled by the main site
-    showApp();
 }
 
 // Show main application
