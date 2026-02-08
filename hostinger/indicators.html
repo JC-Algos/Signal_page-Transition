@@ -1,0 +1,639 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>JC Algos TradingView Indicators</title>
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;600;700&family=Rajdhani:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary: #00d4ff;
+            --primary-dark: #0099cc;
+            --secondary: #7b2cbf;
+            --accent: #00ff88;
+            --bg-light: #f0f4f8;
+            --bg-card: #ffffff;
+            --text-dark: #1a1a2e;
+            --text-muted: #64748b;
+            --border: rgba(0, 212, 255, 0.3);
+            --glow: rgba(0, 212, 255, 0.4);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Rajdhani', sans-serif;
+            background: linear-gradient(135deg, #f0f4f8 0%, #e2e8f0 50%, #f0f4f8 100%);
+            color: var(--text-dark);
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+
+        /* Cyber grid background */
+        body::before {
+            content: '';
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-image: 
+                linear-gradient(rgba(0, 212, 255, 0.03) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(0, 212, 255, 0.03) 1px, transparent 1px);
+            background-size: 50px 50px;
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 0 20px;
+            position: relative;
+            z-index: 1;
+        }
+
+        /* Header */
+        header {
+            padding: 40px 0;
+            text-align: center;
+            position: relative;
+        }
+
+        .logo {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 3rem;
+            font-weight: 700;
+            background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            text-shadow: 0 0 30px var(--glow);
+            margin-bottom: 10px;
+        }
+
+        .tagline {
+            font-size: 1.3rem;
+            color: var(--text-muted);
+            font-weight: 500;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+        }
+
+        .cyber-line {
+            width: 200px;
+            height: 3px;
+            background: linear-gradient(90deg, transparent, var(--primary), transparent);
+            margin: 20px auto;
+            border-radius: 2px;
+        }
+
+        /* Hero Description */
+        .hero-description {
+            text-align: center;
+            max-width: 800px;
+            margin: 0 auto 40px;
+            padding: 30px 20px;
+        }
+
+        .hero-quote {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 1.6rem;
+            font-weight: 600;
+            color: var(--primary-dark);
+            margin-bottom: 8px;
+            font-style: italic;
+            text-shadow: 0 0 20px var(--glow);
+        }
+
+        .hero-quote-cn {
+            font-size: 1.3rem;
+            font-weight: 500;
+            color: var(--text-muted);
+            margin-bottom: 25px;
+        }
+
+        .hero-text {
+            font-size: 1.15rem;
+            color: var(--text-muted);
+            line-height: 1.9;
+            letter-spacing: 0.5px;
+        }
+
+        .hero-text .highlight {
+            color: var(--primary-dark);
+            font-weight: 600;
+            background: linear-gradient(135deg, rgba(0, 212, 255, 0.1), rgba(0, 153, 204, 0.1));
+            padding: 2px 8px;
+            border-radius: 4px;
+        }
+
+        /* Indicators Grid */
+        .indicators-section {
+            padding: 40px 0 80px;
+        }
+
+        .section-title {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 2rem;
+            text-align: center;
+            margin-bottom: 50px;
+            color: var(--text-dark);
+            position: relative;
+        }
+
+        .section-title::after {
+            content: '';
+            display: block;
+            width: 100px;
+            height: 3px;
+            background: var(--primary);
+            margin: 15px auto 0;
+            border-radius: 2px;
+        }
+
+        .indicators-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 40px;
+        }
+
+        @media (max-width: 968px) {
+            .indicators-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        /* Indicator Card */
+        .indicator-card {
+            background: var(--bg-card);
+            border-radius: 16px;
+            overflow: hidden;
+            box-shadow: 
+                0 4px 20px rgba(0, 0, 0, 0.08),
+                0 0 0 1px var(--border);
+            transition: all 0.3s ease;
+            position: relative;
+        }
+
+        .indicator-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 4px;
+            background: linear-gradient(90deg, var(--primary), var(--secondary));
+        }
+
+        .indicator-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 
+                0 12px 40px rgba(0, 212, 255, 0.15),
+                0 0 0 1px var(--primary);
+        }
+
+        .video-container {
+            position: relative;
+            width: 100%;
+            padding-bottom: 56.25%; /* 16:9 */
+            background: linear-gradient(135deg, #1a1a2e, #2d2d44);
+        }
+
+        .video-container iframe {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            border: none;
+        }
+
+        .video-placeholder {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            color: #64748b;
+            background: linear-gradient(135deg, #e2e8f0, #f0f4f8);
+        }
+
+        .video-placeholder svg {
+            width: 60px;
+            height: 60px;
+            margin-bottom: 10px;
+            opacity: 0.5;
+        }
+
+        .card-content {
+            padding: 25px;
+        }
+
+        .indicator-name {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 1.4rem;
+            font-weight: 600;
+            color: var(--text-dark);
+            margin-bottom: 12px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .indicator-name .badge {
+            font-family: 'Rajdhani', sans-serif;
+            font-size: 0.7rem;
+            padding: 4px 10px;
+            background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+            color: white;
+            border-radius: 20px;
+            text-transform: uppercase;
+            font-weight: 600;
+            letter-spacing: 1px;
+        }
+
+        .indicator-description {
+            font-size: 1rem;
+            color: var(--text-muted);
+            line-height: 1.6;
+            margin-bottom: 20px;
+        }
+
+        .subscribe-btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 10px;
+            padding: 14px 28px;
+            background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-family: 'Rajdhani', sans-serif;
+            font-size: 1.1rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-decoration: none;
+            box-shadow: 0 4px 15px rgba(0, 212, 255, 0.3);
+        }
+
+        .subscribe-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 25px rgba(0, 212, 255, 0.4);
+        }
+
+        .subscribe-btn svg {
+            width: 20px;
+            height: 20px;
+        }
+
+        .price-info {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            margin-bottom: 15px;
+            flex-wrap: wrap;
+        }
+
+        .price-original {
+            font-size: 1.1rem;
+            color: var(--text-muted);
+            text-decoration: line-through;
+        }
+
+        .price-promo {
+            font-size: 1.2rem;
+            font-weight: 700;
+            color: #ff6b6b;
+            background: linear-gradient(135deg, #fff5f5, #ffe3e3);
+            padding: 6px 14px;
+            border-radius: 20px;
+            border: 1px solid #ffc9c9;
+        }
+
+        /* Footer */
+        footer {
+            text-align: center;
+            padding: 40px 0;
+            border-top: 1px solid var(--border);
+            color: var(--text-muted);
+        }
+
+        footer a {
+            color: var(--primary);
+            text-decoration: none;
+        }
+
+        /* Floating particles */
+        .particle {
+            position: fixed;
+            width: 4px;
+            height: 4px;
+            background: var(--primary);
+            border-radius: 50%;
+            opacity: 0.3;
+            pointer-events: none;
+            animation: float 20s infinite;
+        }
+
+        @keyframes float {
+            0%, 100% { transform: translateY(100vh) rotate(0deg); opacity: 0; }
+            10% { opacity: 0.3; }
+            90% { opacity: 0.3; }
+            100% { transform: translateY(-100vh) rotate(720deg); opacity: 0; }
+        }
+    </style>
+</head>
+<body>
+    <!-- Floating particles -->
+    <div class="particle" style="left: 10%; animation-delay: 0s;"></div>
+    <div class="particle" style="left: 20%; animation-delay: 2s;"></div>
+    <div class="particle" style="left: 30%; animation-delay: 4s;"></div>
+    <div class="particle" style="left: 50%; animation-delay: 6s;"></div>
+    <div class="particle" style="left: 70%; animation-delay: 8s;"></div>
+    <div class="particle" style="left: 80%; animation-delay: 10s;"></div>
+    <div class="particle" style="left: 90%; animation-delay: 12s;"></div>
+
+    <div class="container">
+        <header>
+            <h1 class="logo">JC ALGOS</h1>
+            <p class="tagline">TradingView Indicators</p>
+            <div class="cyber-line"></div>
+        </header>
+
+        <!-- Hero Description -->
+        <div class="hero-description">
+            <p class="hero-quote">"Trend is your friend — until it ends."</p>
+            <p class="hero-quote-cn">「趨勢是你的朋友 — 直到它結束。」</p>
+            <p class="hero-text">
+                A complete trading strategy combines <span class="highlight">trend & momentum following</span> with <span class="highlight">reversal capture</span> — mastering all market conditions.<br><br>
+                完整的交易策略應包含<span class="highlight">趨勢動量追蹤</span>與<span class="highlight">趨勢反轉捕捉</span>，方能從容應對所有市場結構。
+            </p>
+        </div>
+
+        <section class="indicators-section">
+            <h2 class="section-title">專業指標 Premium Indicators</h2>
+            
+            <div class="indicators-grid">
+                <!-- Indicator 1: Trend Momentum 趨勢動量 -->
+                <div class="indicator-card">
+                    <div class="video-container">
+                        <iframe src="https://www.youtube.com/embed/QPHLywpmJwA" allowfullscreen></iframe>
+                    </div>
+                    <div class="card-content">
+                        <h3 class="indicator-name">
+                            趨勢動量 Trend Momentum
+                            <span class="badge">Pro</span>
+                        </h3>
+                        <p class="indicator-description">
+                            順勢而行，捕捉動量！當真正的動量來臨時觸發訊號。透過多重時間框架分析，精準識別趨勢方向，在動量啟動的黃金時刻發出入場提示，讓您乘風破浪、把握先機。
+                        </p>
+                        <div class="price-info">
+                            <span class="price-original">HK$399/月</span>
+                            <span class="price-promo">首月優惠 HK$100</span>
+                        </div>
+                        <a href="https://buy.stripe.com/6oU7sD4ex61e2d23aI77O01?prefilled_promo_code=INDICATOR75" class="subscribe-btn">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/>
+                            </svg>
+                            立即訂閱
+                        </a>
+                    </div>
+                </div>
+
+                <!-- Indicator 2: MA Band Breakout 均線突破 -->
+                <div class="indicator-card">
+                    <div class="video-container">
+                        <div class="video-placeholder">
+                            <svg viewBox="0 0 24 24" fill="currentColor">
+                                <path d="M8 5v14l11-7z"/>
+                            </svg>
+                            <span>影片即將推出</span>
+                        </div>
+                    </div>
+                    <div class="card-content">
+                        <h3 class="indicator-name">
+                            自動均線通道突破 Automatic MA Band Breakout
+                            <span class="badge">Pro</span>
+                        </h3>
+                        <p class="indicator-description">
+                            自動識別均線通道突破訊號！結合多條移動平均線形成動態通道，當價格突破通道時即時發出警報。視覺化顯示突破強度與方向，助您捕捉趨勢啟動的最佳時機。
+                        </p>
+                        <div class="price-info">
+                            <span class="price-original">HK$199/月</span>
+                            <span class="price-promo">首月優惠 HK$50</span>
+                        </div>
+                        <a href="https://buy.stripe.com/00w4grcL32P29Fu6mU77O02?prefilled_promo_code=INDICATOR75" class="subscribe-btn">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/>
+                            </svg>
+                            立即訂閱
+                        </a>
+                    </div>
+                </div>
+
+                <!-- Indicator 3: SMR Dashboard 強弱動量輪動儀表板 -->
+                <div class="indicator-card">
+                    <div class="video-container">
+                        <div class="video-placeholder">
+                            <svg viewBox="0 0 24 24" fill="currentColor">
+                                <path d="M8 5v14l11-7z"/>
+                            </svg>
+                            <span>影片即將推出</span>
+                        </div>
+                    </div>
+                    <div class="card-content">
+                        <h3 class="indicator-name">
+                            All-in-one SMR 儀表板
+                            <span class="badge">Premium</span>
+                        </h3>
+                        <p class="indicator-description">
+                            一站式交易指標套件！整合強弱動量輪動(SMR)儀表板，多股票同步監控、趨勢分析、動量訊號及板塊輪動洞察。實時掃描市場，視覺化儀表板助您快速決策。
+                        </p>
+                        <div class="price-info">
+                            <span class="price-original">HK$899/月</span>
+                            <span class="price-promo">首月優惠 HK$225</span>
+                        </div>
+                        <a href="https://buy.stripe.com/7sY7sD7qJ0GU5pedPm77O03?prefilled_promo_code=INDICATOR75" class="subscribe-btn">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/>
+                            </svg>
+                            立即訂閱
+                        </a>
+                    </div>
+                </div>
+
+                <!-- Indicator 4: Combo Package 完整指標套裝 -->
+                <div class="indicator-card">
+                    <div class="video-container">
+                        <div class="video-placeholder">
+                            <svg viewBox="0 0 24 24" fill="currentColor">
+                                <path d="M8 5v14l11-7z"/>
+                            </svg>
+                            <span>影片即將推出</span>
+                        </div>
+                    </div>
+                    <div class="card-content">
+                        <h3 class="indicator-name">
+                            完整指標套裝 Complete Bundle
+                            <span class="badge">Bundle</span>
+                        </h3>
+                        <p class="indicator-description">
+                            一次擁有全部指標！包含：2個經典趨勢信號指標、趨勢動量指標、自動均線通道突破指標，以及 Multi Symbol Dashboard 多股票監控面板（整合以上訊號 + 全市場SMR強弱輪動分析）。
+                        </p>
+                        <div class="price-info">
+                            <span class="price-original">HK$1299/月</span>
+                            <span class="price-promo">首月優惠 HK$325</span>
+                        </div>
+                        <a href="https://buy.stripe.com/cNi5kvcL3bly3h63aI77O04?prefilled_promo_code=INDICATOR75" class="subscribe-btn">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/>
+                            </svg>
+                            立即訂閱
+                        </a>
+                    </div>
+                </div>
+
+                <!-- Indicator 5: Magic Number Sequence & Reversal Structure -->
+                <div class="indicator-card">
+                    <div class="video-container">
+                        <div class="video-placeholder">
+                            <svg viewBox="0 0 24 24" fill="currentColor">
+                                <path d="M8 5v14l11-7z"/>
+                            </svg>
+                            <span>影片即將推出</span>
+                        </div>
+                    </div>
+                    <div class="card-content">
+                        <h3 class="indicator-name">
+                            神奇數字反轉結構 Magic Number Reversal
+                            <span class="badge">Pro</span>
+                        </h3>
+                        <p class="indicator-description">
+                            捕捉趨勢反轉點，以最佳風險回報比入場！運用神奇數字序列識別關鍵反轉結構，精準定位趨勢耗盡並反轉的高概率轉折點。在最優位置進場，風險最小化、利潤最大化。
+                        </p>
+                        <div class="price-info">
+                            <span class="price-original">HK$499/月</span>
+                            <span class="price-promo">首月優惠 HK$125</span>
+                        </div>
+                        <a href="https://buy.stripe.com/00waEP8uNexKcRGdPm77O05?prefilled_promo_code=INDICATOR75" class="subscribe-btn">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/>
+                            </svg>
+                            立即訂閱
+                        </a>
+                    </div>
+                </div>
+
+                <!-- Indicator 6: Magic Number Sequence & Reversal Structure Dashboard -->
+                <div class="indicator-card">
+                    <div class="video-container">
+                        <div class="video-placeholder">
+                            <svg viewBox="0 0 24 24" fill="currentColor">
+                                <path d="M8 5v14l11-7z"/>
+                            </svg>
+                            <span>影片即將推出</span>
+                        </div>
+                    </div>
+                    <div class="card-content">
+                        <h3 class="indicator-name">
+                            神奇數字反轉儀表板 Magic Number Dashboard
+                            <span class="badge">Premium</span>
+                        </h3>
+                        <p class="indicator-description">
+                            一次監控30+個股票的反轉訊號！多股票儀表板實時掃描並顯示神奇數字反轉結構訊號，讓您不再錯過任何高概率轉折點。全市場監控，一覽無遺。
+                        </p>
+                        <div class="price-info">
+                            <span class="price-original">HK$799/月</span>
+                            <span class="price-promo">首月優惠 HK$200</span>
+                        </div>
+                        <a href="https://buy.stripe.com/14AcMX9yRbly9Fuh1y77O06?prefilled_promo_code=INDICATOR75" class="subscribe-btn">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/>
+                            </svg>
+                            立即訂閱
+                        </a>
+                    </div>
+                </div>
+
+                <!-- Indicator 7: Magic Number Complete Bundle -->
+                <div class="indicator-card">
+                    <div class="video-container">
+                        <div class="video-placeholder">
+                            <svg viewBox="0 0 24 24" fill="currentColor">
+                                <path d="M8 5v14l11-7z"/>
+                            </svg>
+                            <span>影片即將推出</span>
+                        </div>
+                    </div>
+                    <div class="card-content">
+                        <h3 class="indicator-name">
+                            Magic Number 完整套裝
+                            <span class="badge">Bundle</span>
+                        </h3>
+                        <p class="indicator-description">
+                            完整反轉策略是趨勢交易的最佳搭檔！兩者結合形成全方位交易系統，適應所有市況。套裝包含 Magic Number Sequence & Reversal Structure 指標及多股票 Dashboard，精準捕捉整個監控列表的反轉機會。
+                        </p>
+                        <div class="price-info">
+                            <span class="price-original">HK$1099/月</span>
+                            <span class="price-promo">首月優惠 HK$275</span>
+                        </div>
+                        <a href="https://buy.stripe.com/bJe9AL12lahu7xmh1y77O07?prefilled_promo_code=INDICATOR75" class="subscribe-btn">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/>
+                            </svg>
+                            立即訂閱
+                        </a>
+                    </div>
+                </div>
+
+                <!-- Indicator 8: Market Breadth Indicator -->
+                <div class="indicator-card">
+                    <div class="video-container">
+                        <div class="video-placeholder">
+                            <svg viewBox="0 0 24 24" fill="currentColor">
+                                <path d="M8 5v14l11-7z"/>
+                            </svg>
+                            <span>影片即將推出</span>
+                        </div>
+                    </div>
+                    <div class="card-content">
+                        <h3 class="indicator-name">
+                            市場寬度指標 Market Breadth
+                            <span class="badge">Pro</span>
+                        </h3>
+                        <p class="indicator-description">
+                            揭示市場真正的健康狀況！透過計算指數成分股的強弱比例，顯示市場內部強度。完美搭配任何交易策略，讓您了解市場內部結構是否支持或背離價格走勢。
+                        </p>
+                        <div class="price-info">
+                            <span class="price-original">HK$299/月</span>
+                            <span class="price-promo">首月優惠 HK$75</span>
+                        </div>
+                        <a href="https://buy.stripe.com/7sY7sDaCVcpCbNC26E77O08?prefilled_promo_code=INDICATOR75" class="subscribe-btn">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/>
+                            </svg>
+                            立即訂閱
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <footer>
+            <p>&copy; 2026 JC Algos. All rights reserved. | <a href="index.html">Back to Home</a></p>
+        </footer>
+    </div>
+</body>
+</html>
